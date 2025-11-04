@@ -1,0 +1,416 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model audit_logs {
+  id         String      @id
+  userId     String?
+  merchantId String?
+  action     AuditAction
+  entityType String
+  entityId   String?
+  changes    Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime    @default(now())
+  users      users?      @relation(fields: [userId], references: [id])
+
+  @@index([createdAt])
+  @@index([entityType, entityId])
+  @@index([merchantId])
+  @@index([userId])
+}
+
+model companies {
+  id        String      @id
+  name      String
+  email     String      @unique
+  createdAt DateTime    @default(now())
+  updatedAt DateTime
+  merchants merchants[]
+  users     users[]
+}
+
+model features {
+  id             String          @id
+  name           String
+  slug           String          @unique
+  description    String?
+  type           RoleType
+  category       String
+  isPageLevel    Boolean         @default(true)
+  defaultActions Json?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime
+  role_features  role_features[]
+
+  @@index([category])
+  @@index([slug])
+  @@index([type])
+}
+
+model inventory_transactions {
+  id            String                   @id
+  merchantId    String
+  productId     String
+  locationId    String
+  userId        String
+  type          InventoryTransactionType
+  quantity      Int
+  referenceId   String?
+  referenceType String?
+  reason        String?
+  createdAt     DateTime                 @default(now())
+  merchants     merchants                @relation(fields: [merchantId], references: [id])
+  products      products                 @relation(fields: [productId], references: [id])
+  locations     locations                @relation(fields: [locationId], references: [id])
+  users         users                    @relation(fields: [userId], references: [id])
+
+  @@index([createdAt])
+  @@index([merchantId])
+  @@index([productId])
+  @@index([locationId])
+  @@index([productId, locationId])
+  @@index([type])
+}
+
+model merchant_feature_flags {
+  id          String    @id
+  merchantId  String
+  featureName String
+  isEnabled   Boolean   @default(true)
+  config      Json      @default("{}")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
+  merchants   merchants @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@unique([merchantId, featureName])
+  @@index([featureName])
+  @@index([merchantId])
+}
+
+model locations {
+  id                     String                   @id
+  merchantId             String
+  name                   String
+  address                String?
+  phone                  String?
+  isActive               Boolean                  @default(true)
+  isDefault              Boolean                  @default(false)
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  merchants              merchants                @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  inventory              inventory[]
+  inventory_transactions inventory_transactions[]
+
+  @@unique([merchantId, name])
+  @@index([merchantId])
+  @@map("locations")
+}
+
+model inventory {
+  id             String    @id
+  productId      String
+  locationId     String
+  quantity       Int
+  batchNumber    String?
+  expirationDate DateTime?
+  receivedDate   DateTime  @default(now())
+  notes          String?
+  addedBy        String
+  createdAt      DateTime  @default(now())
+  products       products  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  locations      locations @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  users          users     @relation(fields: [addedBy], references: [id])
+
+  @@index([productId])
+  @@index([locationId])
+  @@index([batchNumber])
+  @@index([expirationDate])
+  @@map("inventory")
+}
+
+model merchants {
+  id                     String                   @id
+  name                   String
+  email                  String                   @unique
+  phone                  String?
+  address                String?
+  isActive               Boolean                  @default(true)
+  companyId              String?
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime
+  status                 MerchantStatus           @default(PENDING_APPROVAL)
+  inventory_transactions inventory_transactions[]
+  merchant_feature_flags merchant_feature_flags[]
+  companies              companies?               @relation(fields: [companyId], references: [id])
+  products               products[]
+  sales                  sales[]
+  subscriptions          subscriptions[]
+  users                  users[]
+  locations              locations[]
+}
+
+model notifications {
+  id         String             @id
+  userId     String?
+  merchantId String?
+  type       NotificationType
+  status     NotificationStatus @default(PENDING)
+  subject    String?
+  content    String
+  emailTo    String
+  sentAt     DateTime?
+  error      String?
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime
+
+  @@index([createdAt])
+  @@index([merchantId])
+  @@index([status])
+  @@index([userId])
+}
+
+model platform_settings {
+  id                        String   @id
+  defaultTrialPeriodDays    Int      @default(30)
+  defaultTransactionFeeRate Decimal  @default(5.00) @db.Decimal(5, 2)
+  globalFeatureFlags        Json     @default("{}")
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime
+}
+
+model products {
+  id                     String                   @id
+  merchantId             String
+  name                   String
+  brand                  String?
+  size                   String?
+  price                  Decimal                  @db.Decimal(10, 2)
+  sku                    String?
+  barcode                String?
+  description            String?
+  lowStockThreshold      Int                      @default(5)
+  imageUrl               String?
+  isActive               Boolean                  @default(true)
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime
+  costPrice              Decimal                  @db.Decimal(10, 2)
+  inventory_transactions inventory_transactions[]
+  inventory              inventory[]
+  merchants              merchants                @relation(fields: [merchantId], references: [id])
+  sale_items             sale_items[]
+
+  @@index([barcode])
+  @@index([merchantId])
+  @@index([sku])
+}
+
+model role_features {
+  id        String   @id
+  roleId    String
+  featureId String
+  actions   Json?
+  createdAt DateTime @default(now())
+  features  features @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  roles     roles    @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, featureId])
+  @@index([featureId])
+  @@index([roleId])
+}
+
+model roles {
+  id                    String                  @id
+  name                  String
+  description           String?
+  type                  RoleType
+  hierarchyLevel        Int                     @default(1)
+  isSystemRole          Boolean                 @default(false)
+  companyId             String?
+  createdBy             String
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime
+  role_features         role_features[]
+  user_role_assignments user_role_assignments[]
+
+  @@index([companyId])
+  @@index([type])
+}
+
+model sale_items {
+  id           String   @id
+  saleId       String
+  productId    String
+  quantity     Int
+  unitPrice    Decimal  @db.Decimal(10, 2)
+  totalPrice   Decimal  @db.Decimal(10, 2)
+  createdAt    DateTime @default(now())
+  defaultPrice Decimal  @db.Decimal(10, 2)
+  products     products @relation(fields: [productId], references: [id])
+  sales        sales    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([saleId])
+}
+
+model sales {
+  id            String       @id
+  merchantId    String
+  userId        String
+  totalAmount   Decimal      @db.Decimal(10, 2)
+  notes         String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime
+  platformFee   Decimal      @default(0) @db.Decimal(10, 2)
+  customerName  String?
+  customerPhone String?
+  saleDate      DateTime     @default(now())
+  sale_items    sale_items[]
+  merchants     merchants    @relation(fields: [merchantId], references: [id])
+  users         users        @relation(fields: [userId], references: [id])
+
+  @@index([createdAt])
+  @@index([merchantId])
+  @@index([saleDate])
+}
+
+model subscription_payments {
+  id             String        @id
+  subscriptionId String
+  amount         Decimal       @db.Decimal(10, 2)
+  paymentDate    DateTime      @default(now())
+  notes          String?
+  createdAt      DateTime      @default(now())
+  subscriptions  subscriptions @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([paymentDate])
+  @@index([subscriptionId])
+}
+
+model subscriptions {
+  id                    String                  @id
+  merchantId            String
+  planType              SubscriptionPlanType    @default(TRIAL)
+  status                SubscriptionStatus      @default(ACTIVE_TRIAL)
+  startDate             DateTime                @default(now())
+  trialEndDate          DateTime
+  trialPeriodDays       Int                     @default(30)
+  transactionFeeRate    Decimal                 @db.Decimal(5, 2)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime
+  subscription_payments subscription_payments[]
+  merchants             merchants               @relation(fields: [merchantId], references: [id])
+
+  @@index([merchantId])
+  @@index([status])
+  @@index([trialEndDate])
+}
+
+model user_role_assignments {
+  id         String   @id
+  userId     String
+  roleId     String
+  assignedBy String
+  assignedAt DateTime @default(now())
+  isActive   Boolean  @default(true)
+  roles      roles    @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  users      users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([isActive])
+  @@index([roleId])
+  @@index([userId])
+}
+
+model users {
+  id                         String                   @id
+  email                      String                   @unique
+  password                   String
+  firstName                  String
+  lastName                   String?
+  role                       UserRole
+  companyId                  String?
+  merchantId                 String?
+  isActive                   Boolean                  @default(true)
+  createdAt                  DateTime                 @default(now())
+  updatedAt                  DateTime
+  requiresPasswordChange     Boolean                  @default(false)
+  temporaryPassword          String?
+  temporaryPasswordExpiresAt DateTime?
+  audit_logs                 audit_logs[]
+  inventory_transactions     inventory_transactions[]
+  inventory                  inventory[]
+  sales                      sales[]
+  user_role_assignments      user_role_assignments[]
+  companies                  companies?               @relation(fields: [companyId], references: [id])
+  merchants                  merchants?               @relation(fields: [merchantId], references: [id])
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+}
+
+enum InventoryTransactionType {
+  SALE
+  ADJUSTMENT
+  RESTOCK
+  RETURN
+  TRANSFER_IN
+  TRANSFER_OUT
+  STOCK_IN
+}
+
+enum MerchantStatus {
+  PENDING_APPROVAL
+  ACTIVE
+  INACTIVE
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum NotificationType {
+  LOW_STOCK
+  SALE_SUMMARY
+  WEEKLY_REPORT
+  WELCOME
+  ROLE_ASSIGNED
+  PASSWORD_RESET
+}
+
+enum RoleType {
+  PLATFORM_OWNER
+  MERCHANT
+}
+
+enum SubscriptionPlanType {
+  TRIAL
+  MONTHLY
+  YEARLY
+}
+
+enum SubscriptionStatus {
+  ACTIVE_TRIAL
+  ACTIVE_PAID
+  EXPIRED
+  CANCELLED
+}
+
+enum UserRole {
+  PLATFORM_OWNER
+  MERCHANT_ADMIN
+  MERCHANT_STAFF
+}
