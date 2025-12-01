@@ -24,7 +24,14 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Edit, Trash2, Image as ImageIcon, Package, Download, RotateCcw } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Plus, Search, Edit, Trash2, Image as ImageIcon, Package, Download, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { BulkActions } from '@/components/products/bulk-actions';
 import { Checkbox as UICheckbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
@@ -53,15 +60,31 @@ type ProductFormData = z.infer<typeof productSchema>;
 
 export default function ProductsPage() {
   const [search, setSearch] = useState('');
+  const [stockFilter, setStockFilter] = useState<string>('all'); // 'all', 'inStock', 'outOfStock', 'lowStock'
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['products', search],
+    queryKey: ['products', search, stockFilter, page, limit],
     queryFn: async () => {
-      const params = search ? { search } : {};
+      const params: any = {};
+      if (search) {
+        params.search = search;
+      }
+      if (stockFilter === 'inStock') {
+        params.inStock = 'true';
+      } else if (stockFilter === 'outOfStock') {
+        params.outOfStock = 'true';
+      } else if (stockFilter === 'lowStock') {
+        params.lowStock = 'true';
+      }
+      params.page = page;
+      params.limit = limit;
+      
       const res = await apiClient.get('/products', { params });
       return {
         products: res.data.data || [],
@@ -265,10 +288,30 @@ export default function ProductsPage() {
                 <Input
                   placeholder="Search products..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setPage(1); // Reset to first page on search
+                  }}
                   className="pl-8 w-64"
                 />
               </div>
+              <Select
+                value={stockFilter}
+                onValueChange={(value) => {
+                  setStockFilter(value);
+                  setPage(1); // Reset to first page on filter change
+                }}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filter by stock" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Products</SelectItem>
+                  <SelectItem value="inStock">In Stock</SelectItem>
+                  <SelectItem value="outOfStock">Out of Stock</SelectItem>
+                  <SelectItem value="lowStock">Low Stock</SelectItem>
+                </SelectContent>
+              </Select>
               <BulkActions
                 selectedIds={selectedProducts}
                 onBulkDelete={(ids) => {
@@ -311,125 +354,182 @@ export default function ProductsPage() {
           ) : error ? (
             <SubscriptionErrorMessage error={error} title="Cannot Load Products" />
           ) : data && data.products && data.products.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">
-                    <UICheckbox
-                      checked={selectedProducts.length === data.products.length && data.products.length > 0}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedProducts(data.products.map((p: any) => p.id));
-                        } else {
-                          setSelectedProducts([]);
-                        }
-                      }}
-                    />
-                  </TableHead>
-                  <TableHead>Image</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Brand</TableHead>
-                  <TableHead>SKU</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Stock</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.products.map((product: any) => (
-                  <TableRow key={product.id} className={selectedProducts.includes(product.id) ? 'bg-muted/50' : ''}>
-                    <TableCell>
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">
                       <UICheckbox
-                        checked={selectedProducts.includes(product.id)}
+                        checked={selectedProducts.length === data.products.length && data.products.length > 0}
                         onCheckedChange={(checked) => {
                           if (checked) {
-                            setSelectedProducts([...selectedProducts, product.id]);
+                            setSelectedProducts(data.products.map((p: any) => p.id));
                           } else {
-                            setSelectedProducts(selectedProducts.filter((id) => id !== product.id));
+                            setSelectedProducts([]);
                           }
                         }}
                       />
-                    </TableCell>
-                    <TableCell>
-                      {product.imageUrl ? (
-                        <Image
-                          src={product.imageUrl}
-                          alt={product.name}
-                          width={40}
-                          height={40}
-                          className="rounded"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 bg-muted rounded flex items-center justify-center">
-                          <ImageIcon className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="font-medium">{product.name}</TableCell>
-                    <TableCell>{product.brand || '-'}</TableCell>
-                    <TableCell>{product.sku || '-'}</TableCell>
-                    <TableCell>{formatCurrency(product.price)}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          (productStock?.[product.id] || 0) <= product.lowStockThreshold
-                            ? 'destructive'
-                            : 'default'
-                        }
-                      >
-                        {productStock?.[product.id] ?? '...'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={product.isActive ? 'default' : 'secondary'}>
-                        {product.isActive ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        {product.isActive ? (
-                          <>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(product)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(product.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                          </>
-                        ) : (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleReactivate(product.id)}
-                              className="text-green-600 hover:text-green-700"
-                            >
-                              <RotateCcw className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEdit(product)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
+                    </TableHead>
+                    <TableHead>Image</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Brand</TableHead>
+                    <TableHead>SKU</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead>Stock</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {data.products.map((product: any) => (
+                    <TableRow key={product.id} className={selectedProducts.includes(product.id) ? 'bg-muted/50' : ''}>
+                      <TableCell>
+                        <UICheckbox
+                          checked={selectedProducts.includes(product.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedProducts([...selectedProducts, product.id]);
+                            } else {
+                              setSelectedProducts(selectedProducts.filter((id) => id !== product.id));
+                            }
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {product.imageUrl ? (
+                          <Image
+                            src={product.imageUrl}
+                            alt={product.name}
+                            width={40}
+                            height={40}
+                            className="rounded"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 bg-muted rounded flex items-center justify-center">
+                            <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="font-medium">{product.name}</TableCell>
+                      <TableCell>{product.brand || '-'}</TableCell>
+                      <TableCell>{product.sku || '-'}</TableCell>
+                      <TableCell>{formatCurrency(product.price)}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            (productStock?.[product.id] || 0) <= product.lowStockThreshold
+                              ? 'destructive'
+                              : 'default'
+                          }
+                        >
+                          {productStock?.[product.id] ?? '...'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={product.isActive ? 'default' : 'secondary'}>
+                          {product.isActive ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          {product.isActive ? (
+                            <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEdit(product)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(product.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleReactivate(product.id)}
+                                className="text-green-600 hover:text-green-700"
+                              >
+                                <RotateCcw className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEdit(product)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              
+              {/* Pagination Controls */}
+              {data?.pagination && data.pagination.totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-muted-foreground">
+                      Showing {((data.pagination.page - 1) * data.pagination.limit) + 1} to{' '}
+                      {Math.min(data.pagination.page * data.pagination.limit, data.pagination.total)} of{' '}
+                      {data.pagination.total} products
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Select
+                      value={limit.toString()}
+                      onValueChange={(value) => {
+                        setLimit(parseInt(value, 10));
+                        setPage(1); // Reset to first page when changing limit
+                      }}
+                    >
+                      <SelectTrigger className="w-[100px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="20">20</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={data.pagination.page === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <div className="flex items-center gap-1 px-2">
+                        <span className="text-sm">
+                          Page {data.pagination.page} of {data.pagination.totalPages}
+                        </span>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPage((p) => Math.min(data.pagination.totalPages, p + 1))}
+                        disabled={data.pagination.page === data.pagination.totalPages}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <div className="text-center py-8">
               <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />

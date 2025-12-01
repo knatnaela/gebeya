@@ -27,6 +27,17 @@ const addStockSchema = z.object({
   expirationDate: z.string().datetime().optional().transform((val) => val ? new Date(val) : undefined),
   receivedDate: z.string().datetime().optional().transform((val) => val ? new Date(val) : undefined),
   notes: z.string().optional(),
+  // Payment tracking fields
+  paymentStatus: z.enum(['PAID', 'CREDIT', 'PARTIAL']).optional(),
+  supplierName: z.string().optional(),
+  supplierContact: z.string().optional(),
+  totalCost: z.number().nonnegative().optional(),
+  paidAmount: z.number().nonnegative().optional(),
+  paymentDueDate: z.string().datetime().optional().transform((val) => val ? new Date(val) : undefined),
+});
+
+const markAsPaidSchema = z.object({
+  paidAmount: z.number().nonnegative().optional(),
 });
 
 const transferStockSchema = z.object({
@@ -276,6 +287,50 @@ export class InventoryController {
       res.status(error.statusCode || 500).json({
         success: false,
         error: error.message || 'Failed to fetch stock history',
+      });
+    }
+  }
+
+  async getDebtSummary(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const summary = await inventoryStockService.getDebtSummary(req);
+
+      res.json({
+        success: true,
+        data: summary,
+      });
+    } catch (error: any) {
+      res.status(error.statusCode || 500).json({
+        success: false,
+        error: error.message || 'Failed to get debt summary',
+      });
+    }
+  }
+
+  async markAsPaid(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { inventoryId } = req.params;
+      const validatedData = markAsPaidSchema.parse(req.body);
+      
+      const updated = await inventoryStockService.markAsPaid(req, inventoryId, validatedData.paidAmount);
+
+      res.json({
+        success: true,
+        data: updated,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          success: false,
+          error: 'Validation failed',
+          details: error.issues,
+        });
+        return;
+      }
+
+      res.status((error as any).statusCode || 500).json({
+        success: false,
+        error: (error as any).message || 'Failed to mark as paid',
       });
     }
   }

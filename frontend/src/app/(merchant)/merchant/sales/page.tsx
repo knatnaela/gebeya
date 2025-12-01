@@ -38,18 +38,30 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { formatCurrency, formatCurrencySmart } from '@/lib/currency';
 import { SubscriptionErrorMessage } from '@/components/subscription/subscription-error-message';
+import { DateFilter } from '@/components/filters/date-filter';
 
 export default function SalesPage() {
   const router = useRouter();
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
   const [selectedSale, setSelectedSale] = useState<any>(null);
   const [search, setSearch] = useState('');
+  const [startDate, setStartDate] = useState<string | undefined>(undefined);
+  const [endDate, setEndDate] = useState<string | undefined>(undefined);
   const queryClient = useQueryClient();
 
   const { data: salesData, isLoading, error } = useQuery({
-    queryKey: ['sales', search],
+    queryKey: ['sales', search, startDate, endDate],
     queryFn: async () => {
-      const params = search ? { search } : {};
+      const params: any = {};
+      if (search) {
+        params.search = search;
+      }
+      if (startDate) {
+        params.startDate = startDate;
+      }
+      if (endDate) {
+        params.endDate = endDate;
+      }
       const res = await apiClient.get('/sales', { params });
       // Backend returns { success: true, data: [...sales array], pagination: {...} }
       return {
@@ -84,23 +96,39 @@ export default function SalesPage() {
         </div>
       </div>
 
+      {/* Filters */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Filters</CardTitle>
+          <CardDescription>Filter sales by date range and search</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <DateFilter
+            onDateChange={(start, end) => {
+              setStartDate(start);
+              setEndDate(end);
+            }}
+            defaultPreset="all-time"
+            value={{ startDate, endDate }}
+          />
+          <div className="relative">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search sales..."
+              value={search || ''}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-8 w-full max-w-md"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Sales History</CardTitle>
               <CardDescription>All recorded sales transactions</CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search sales..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-8 w-64"
-                />
-              </div>
             </div>
           </div>
         </CardHeader>
@@ -192,7 +220,7 @@ export default function SalesPage() {
                       </TableCell>
                       <TableCell className="font-medium text-blue-600">
                         {Number(sale.profitMargin || 0).toFixed(2)}%
-                    </TableCell>
+                      </TableCell>
                     <TableCell>
                       {sale.users?.firstName || ''} {sale.users?.lastName || ''}
                     </TableCell>

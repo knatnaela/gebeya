@@ -16,6 +16,7 @@ import roleRoutes from './routes/role.routes';
 import featureRoutes from './routes/feature.routes';
 import userRoutes from './routes/user.routes';
 import locationRoutes from './routes/location.routes';
+import expenseRoutes from './routes/expense.routes';
 
 const app = express();
 
@@ -71,6 +72,9 @@ app.use('/api/users', userRoutes);
 
 // Location routes
 app.use('/api/locations', locationRoutes);
+
+// Expense routes
+app.use('/api/expenses', expenseRoutes);
 
 // Error handling middleware (must be last)
 app.use(errorHandler);

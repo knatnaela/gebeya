@@ -46,6 +46,13 @@ const addStockSchema = z.object({
   expirationDate: z.string().optional(),
   receivedDate: z.string().optional(),
   notes: z.string().optional(),
+  // Payment tracking fields
+  paymentStatus: z.enum(['PAID', 'CREDIT', 'PARTIAL']).optional(),
+  supplierName: z.string().optional(),
+  supplierContact: z.string().optional(),
+  totalCost: z.number().nonnegative().optional(),
+  paidAmount: z.number().nonnegative().optional(),
+  paymentDueDate: z.string().optional(),
 });
 
 const transferStockSchema = z.object({
@@ -107,6 +114,13 @@ export default function StockManagementPage() {
       if (data.expirationDate) payload.expirationDate = new Date(data.expirationDate).toISOString();
       if (data.receivedDate) payload.receivedDate = new Date(data.receivedDate).toISOString();
       if (data.notes) payload.notes = data.notes;
+      // Payment tracking fields
+      if (data.paymentStatus) payload.paymentStatus = data.paymentStatus;
+      if (data.supplierName) payload.supplierName = data.supplierName;
+      if (data.supplierContact) payload.supplierContact = data.supplierContact;
+      if (data.totalCost !== undefined) payload.totalCost = data.totalCost;
+      if (data.paidAmount !== undefined) payload.paidAmount = data.paidAmount;
+      if (data.paymentDueDate) payload.paymentDueDate = new Date(data.paymentDueDate).toISOString();
 
       const res = await apiClient.post('/inventory/stock', payload);
       return res.data;
@@ -214,7 +228,7 @@ export default function StockManagementPage() {
                     <SelectContent>
                       {products?.map((product: any) => (
                         <SelectItem key={product.id} value={product.id}>
-                          {product.name}
+                          {product.name}{product.size ? ` (${product.size})` : ''}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -326,7 +340,7 @@ export default function StockManagementPage() {
                     <SelectContent>
                       {products?.map((product: any) => (
                         <SelectItem key={product.id} value={product.id}>
-                          {product.name}
+                          {product.name}{product.size ? ` (${product.size})` : ''}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -398,6 +412,85 @@ export default function StockManagementPage() {
                     placeholder="Additional notes about this stock entry"
                   />
                 </div>
+                
+                {/* Payment Tracking Section */}
+                <div className="border-t pt-4 space-y-4">
+                  <div>
+                    <Label className="text-base font-semibold">Payment Information</Label>
+                    <p className="text-sm text-muted-foreground">Track whether this stock was paid for or bought on credit</p>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="payment-status">Payment Status</Label>
+                    <Select
+                      value={watchAddStock('paymentStatus') || 'PAID'}
+                      onValueChange={(value) => setValueAddStock('paymentStatus', value as 'PAID' | 'CREDIT' | 'PARTIAL')}
+                    >
+                      <SelectTrigger id="payment-status">
+                        <SelectValue placeholder="Select payment status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="PAID">Paid</SelectItem>
+                        <SelectItem value="CREDIT">Credit (Unpaid)</SelectItem>
+                        <SelectItem value="PARTIAL">Partial Payment</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="supplier-name">Supplier Name (Optional)</Label>
+                    <Input
+                      id="supplier-name"
+                      {...registerAddStock('supplierName')}
+                      placeholder="Enter supplier name"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="supplier-contact">Supplier Contact (Optional)</Label>
+                    <Input
+                      id="supplier-contact"
+                      {...registerAddStock('supplierContact')}
+                      placeholder="Phone or email"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="total-cost">Total Cost (Optional)</Label>
+                    <Input
+                      id="total-cost"
+                      type="number"
+                      step="0.01"
+                      {...registerAddStock('totalCost', { valueAsNumber: true })}
+                      placeholder="0.00"
+                    />
+                  </div>
+
+                  {watchAddStock('paymentStatus') === 'PARTIAL' && (
+                    <div>
+                      <Label htmlFor="paid-amount">Paid Amount</Label>
+                      <Input
+                        id="paid-amount"
+                        type="number"
+                        step="0.01"
+                        {...registerAddStock('paidAmount', { valueAsNumber: true })}
+                        placeholder="0.00"
+                      />
+                    </div>
+                  )}
+
+                  {(watchAddStock('paymentStatus') === 'CREDIT' || watchAddStock('paymentStatus') === 'PARTIAL') && (
+                    <div>
+                      <Label htmlFor="payment-due-date">Payment Due Date (Optional)</Label>
+                      <Input
+                        id="payment-due-date"
+                        type="date"
+                        {...registerAddStock('paymentDueDate')}
+                      />
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex justify-end gap-2 pt-4">
                   <Button
                     type="button"
@@ -426,7 +519,10 @@ export default function StockManagementPage() {
           <div className="flex gap-4 mb-4">
             <div className="flex-1">
               <Label>Filter by Product</Label>
-              <Select value={productFilter || 'all'} onValueChange={(value) => setProductFilter(value === 'all' ? '' : value)}>
+              <Select 
+                value={productFilter || 'all'} 
+                onValueChange={(value) => setProductFilter(value === 'all' ? '' : value)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="All products" />
                 </SelectTrigger>
@@ -442,7 +538,10 @@ export default function StockManagementPage() {
             </div>
             <div className="flex-1">
               <Label>Filter by Location</Label>
-              <Select value={locationFilter || 'all'} onValueChange={(value) => setLocationFilter(value === 'all' ? '' : value)}>
+              <Select 
+                value={locationFilter || 'all'} 
+                onValueChange={(value) => setLocationFilter(value === 'all' ? '' : value)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="All locations" />
                 </SelectTrigger>
@@ -474,10 +573,12 @@ export default function StockManagementPage() {
                   <TableHead>Product</TableHead>
                   <TableHead>Location</TableHead>
                   <TableHead>Quantity</TableHead>
+                  <TableHead>Payment Status</TableHead>
+                  <TableHead>Supplier</TableHead>
+                  <TableHead>Cost</TableHead>
                   <TableHead>Batch</TableHead>
                   <TableHead>Expiration</TableHead>
                   <TableHead>Added By</TableHead>
-                  <TableHead>Notes</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -488,6 +589,56 @@ export default function StockManagementPage() {
                     <TableCell>{entry.locations?.name || 'Unknown Location'}</TableCell>
                     <TableCell>
                       <Badge variant="default">{entry.quantity}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {entry.paymentStatus && (
+                        <Badge
+                          variant={
+                            entry.paymentStatus === 'CREDIT'
+                              ? 'destructive'
+                              : entry.paymentStatus === 'PARTIAL'
+                              ? 'secondary'
+                              : 'default'
+                          }
+                        >
+                          {entry.paymentStatus}
+                        </Badge>
+                      )}
+                      {!entry.paymentStatus && <span className="text-muted-foreground">-</span>}
+                    </TableCell>
+                    <TableCell>
+                      {entry.supplierName ? (
+                        <div>
+                          <div className="font-medium">{entry.supplierName}</div>
+                          {entry.supplierContact && (
+                            <div className="text-xs text-muted-foreground">{entry.supplierContact}</div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {entry.totalCost ? (
+                        <div>
+                          <div className="font-medium">
+                            {new Intl.NumberFormat('en-US', {
+                              style: 'currency',
+                              currency: 'USD',
+                            }).format(Number(entry.totalCost))}
+                          </div>
+                          {entry.paymentStatus === 'PARTIAL' && entry.paidAmount && (
+                            <div className="text-xs text-muted-foreground">
+                              Paid: {new Intl.NumberFormat('en-US', {
+                                style: 'currency',
+                                currency: 'USD',
+                              }).format(Number(entry.paidAmount))}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       {entry.batchNumber || <span className="text-muted-foreground">-</span>}
@@ -501,9 +652,6 @@ export default function StockManagementPage() {
                     </TableCell>
                     <TableCell>
                       {entry.users?.firstName || ''} {entry.users?.lastName || ''}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {entry.notes || '-'}
                     </TableCell>
                   </TableRow>
                 ))}

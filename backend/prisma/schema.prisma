@@ -114,24 +114,34 @@ model locations {
 }
 
 model inventory {
-  id             String    @id
+  id             String          @id
   productId      String
   locationId     String
   quantity       Int
   batchNumber    String?
   expirationDate DateTime?
-  receivedDate   DateTime  @default(now())
+  receivedDate   DateTime        @default(now())
   notes          String?
   addedBy        String
-  createdAt      DateTime  @default(now())
-  products       products  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  locations      locations @relation(fields: [locationId], references: [id], onDelete: Cascade)
-  users          users     @relation(fields: [addedBy], references: [id])
+  createdAt      DateTime        @default(now())
+  // Payment tracking fields
+  paymentStatus  PaymentStatus   @default(PAID)
+  supplierName   String?
+  supplierContact String?
+  totalCost      Decimal?        @db.Decimal(10, 2)
+  paidAmount     Decimal?        @db.Decimal(10, 2)
+  paymentDueDate DateTime?
+  paidAt         DateTime?
+  products       products        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  locations      locations       @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  users          users           @relation(fields: [addedBy], references: [id])
 
   @@index([productId])
   @@index([locationId])
   @@index([batchNumber])
   @@index([expirationDate])
+  @@index([paymentStatus])
+  @@index([paymentDueDate])
   @@map("inventory")
 }
 
@@ -154,6 +164,7 @@ model merchants {
   subscriptions          subscriptions[]
   users                  users[]
   locations              locations[]
+  expenses               expenses[]
 }
 
 model notifications {
@@ -280,6 +291,26 @@ model sales {
   @@index([saleDate])
 }
 
+model expenses {
+  id          String          @id
+  merchantId  String
+  userId      String
+  category    ExpenseCategory
+  amount      Decimal         @db.Decimal(10, 2)
+  description String?
+  expenseDate DateTime        @default(now())
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime
+  merchants   merchants       @relation(fields: [merchantId], references: [id])
+  users       users           @relation(fields: [userId], references: [id])
+
+  @@index([createdAt])
+  @@index([merchantId])
+  @@index([expenseDate])
+  @@index([category])
+  @@map("expenses")
+}
+
 model subscription_payments {
   id             String        @id
   subscriptionId String
@@ -347,6 +378,7 @@ model users {
   inventory_transactions     inventory_transactions[]
   inventory                  inventory[]
   sales                      sales[]
+  expenses                   expenses[]
   user_role_assignments      user_role_assignments[]
   companies                  companies?               @relation(fields: [companyId], references: [id])
   merchants                  merchants?               @relation(fields: [merchantId], references: [id])
@@ -413,4 +445,23 @@ enum UserRole {
   PLATFORM_OWNER
   MERCHANT_ADMIN
   MERCHANT_STAFF
+}
+
+enum ExpenseCategory {
+  MARKETING
+  RENT
+  FUEL
+  UTILITIES
+  SALARIES
+  MAINTENANCE
+  SUPPLIES
+  INSURANCE
+  TAXES
+  OTHER
+}
+
+enum PaymentStatus {
+  PAID
+  CREDIT
+  PARTIAL
 }

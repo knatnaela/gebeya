@@ -293,7 +293,7 @@ export default function InventoryPage() {
                 <SelectContent>
                   {products?.map((product: any) => (
                     <SelectItem key={product.id} value={product.id}>
-                      {product.name}
+                      {product.name}{product.size ? ` (${product.size})` : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>

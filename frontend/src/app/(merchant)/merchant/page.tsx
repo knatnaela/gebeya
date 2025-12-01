@@ -1,18 +1,68 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useSearchParams, useRouter } from 'next/navigation';
 import apiClient from '@/lib/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Package, ShoppingCart, TrendingUp, AlertTriangle, Clock, XCircle, Calendar } from 'lucide-react';
+import { Package, ShoppingCart, TrendingUp, TrendingDown, AlertTriangle, Clock, XCircle, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { formatCurrency, formatCurrencySmart } from '@/lib/currency';
 import { format } from 'date-fns';
 import { SubscriptionErrorMessage } from '@/components/subscription/subscription-error-message';
+import { DateFilter } from '@/components/filters/date-filter';
 
 export default function MerchantDashboard() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  
+  // Initialize from URL query params
+  const [startDate, setStartDate] = useState<string | undefined>(
+    searchParams.get('startDate') || undefined
+  );
+  const [endDate, setEndDate] = useState<string | undefined>(
+    searchParams.get('endDate') || undefined
+  );
+  
+  // Sync state when URL params change (e.g., browser back/forward)
+  useEffect(() => {
+    const urlStartDate = searchParams.get('startDate') || undefined;
+    const urlEndDate = searchParams.get('endDate') || undefined;
+    
+    if (urlStartDate !== startDate || urlEndDate !== endDate) {
+      setStartDate(urlStartDate);
+      setEndDate(urlEndDate);
+    }
+  }, [searchParams]); // Only depend on searchParams to avoid loops
+  
+  // Update URL when dates change
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    
+    if (startDate) {
+      params.set('startDate', startDate);
+    } else {
+      params.delete('startDate');
+    }
+    
+    if (endDate) {
+      params.set('endDate', endDate);
+    } else {
+      params.delete('endDate');
+    }
+    
+    // Only update URL if params actually changed
+    const newParamsString = params.toString();
+    const currentParamsString = searchParams.toString();
+    
+    if (newParamsString !== currentParamsString) {
+      router.replace(`/merchant?${newParamsString}`, { scroll: false });
+    }
+  }, [startDate, endDate, router, searchParams]);
+
   const { data: inventorySummary, isLoading: inventoryLoading, error: inventoryError } = useQuery({
     queryKey: ['inventory-summary'],
     queryFn: async () => {
@@ -23,9 +73,16 @@ export default function MerchantDashboard() {
   });
 
   const { data: salesAnalytics, isLoading: salesLoading, error: salesError } = useQuery({
-    queryKey: ['sales-analytics'],
+    queryKey: ['sales-analytics', startDate, endDate],
     queryFn: async () => {
-      const res = await apiClient.get('/sales/analytics');
+      const params: any = {};
+      if (startDate) {
+        params.startDate = startDate;
+      }
+      if (endDate) {
+        params.endDate = endDate;
+      }
+      const res = await apiClient.get('/sales/analytics', { params });
       return res.data.data;
     },
     retry: false, // Don't retry on subscription expired errors
@@ -172,6 +229,24 @@ export default function MerchantDashboard() {
         />
       ) : (
         <>
+          {/* Date Filter */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Date Range</CardTitle>
+              <CardDescription>Filter analytics by date range</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DateFilter
+                onDateChange={(start, end) => {
+                  setStartDate(start);
+                  setEndDate(end);
+                }}
+                defaultPreset="all-time"
+                value={{ startDate, endDate }}
+              />
+            </CardContent>
+          </Card>
+
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card className="hover:shadow-md transition-shadow border-purple-100">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -184,22 +259,56 @@ export default function MerchantDashboard() {
                 <div className="text-2xl font-bold">
                   {formatCurrencySmart(salesAnalytics?.totalRevenue || 0)}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">All time revenue</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {startDate && endDate ? 'Selected period' : 'All time'} revenue
+                </p>
               </CardContent>
             </Card>
 
         <Card className="hover:shadow-md transition-shadow border-emerald-100">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Net Income</CardTitle>
+            <CardTitle className="text-sm font-medium">Gross Profit</CardTitle>
             <div className="p-2 rounded-full bg-emerald-100">
               <TrendingUp className="h-4 w-4 text-emerald-600" />
             </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-emerald-600">
-              {formatCurrencySmart(salesAnalytics?.totalNetIncome || 0)}
+              {formatCurrencySmart(salesAnalytics?.grossProfit || 0)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">Revenue - COGS</p>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-md transition-shadow border-red-100">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
+            <div className="p-2 rounded-full bg-red-100">
+              <TrendingDown className="h-4 w-4 text-red-600" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">
+              {formatCurrencySmart(salesAnalytics?.totalExpenses || 0)}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {startDate && endDate ? 'Selected period' : 'All'} expenses
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-md transition-shadow border-blue-100">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Net Profit</CardTitle>
+            <div className="p-2 rounded-full bg-blue-100">
+              <TrendingUp className="h-4 w-4 text-blue-600" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${(salesAnalytics?.netProfit || 0) >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+              {formatCurrencySmart(salesAnalytics?.netProfit || 0)}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Gross Profit - Expenses</p>
           </CardContent>
         </Card>
 
@@ -211,10 +320,10 @@ export default function MerchantDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-cyan-600">
-              {Number(salesAnalytics?.totalProfitMargin || 0).toFixed(2)}%
+            <div className={`text-2xl font-bold ${Number(salesAnalytics?.profitMargin || 0) >= 0 ? 'text-cyan-600' : 'text-red-600'}`}>
+              {Number(salesAnalytics?.profitMargin || 0).toFixed(2)}%
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Profit / Revenue</p>
+            <p className="text-xs text-muted-foreground mt-1">Net Profit / Revenue</p>
           </CardContent>
         </Card>
 
@@ -227,7 +336,9 @@ export default function MerchantDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{salesAnalytics?.totalSales || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">All time sales</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {startDate && endDate ? 'Selected period' : 'All time'} sales
+            </p>
           </CardContent>
         </Card>
       </div>

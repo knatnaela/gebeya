@@ -120,3 +120,214 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* React Day Picker Styles */
+.rdp {
+  --rdp-cell-size: 40px;
+  --rdp-accent-color: hsl(var(--primary));
+  --rdp-background-color: hsl(var(--primary) / 0.2);
+  --rdp-accent-color-dark: hsl(var(--primary));
+  --rdp-background-color-dark: hsl(var(--primary) / 0.2);
+  --rdp-outline: 2px solid var(--rdp-accent-color);
+  --rdp-outline-selected: 3px solid var(--rdp-accent-color);
+  margin: 0;
+}
+
+.rdp-button_reset {
+  appearance: none;
+  position: relative;
+  margin: 0;
+  padding: 0;
+  cursor: default;
+  color: inherit;
+  border: none;
+  background-color: transparent;
+  font: inherit;
+}
+
+.rdp-button {
+  border: 2px solid transparent;
+}
+
+.rdp-button[disabled] {
+  opacity: 0.25;
+}
+
+.rdp-button:not([disabled]) {
+  cursor: pointer;
+}
+
+.rdp-day {
+  width: var(--rdp-cell-size);
+  height: var(--rdp-cell-size);
+  text-align: center;
+}
+
+/* Base day button styles */
+.rdp-button {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.375rem;
+}
+
+/* Selected days - lighter primary color for range */
+.rdp-day_selected,
+.rdp-day_selected:focus-visible {
+  color: hsl(var(--primary-foreground)) !important;
+  background-color: hsl(var(--primary) / 0.2) !important;
+  opacity: 1 !important;
+}
+
+.rdp-day_selected .rdp-button,
+.rdp-day_selected button {
+  color: hsl(var(--primary-foreground)) !important;
+  background-color: hsl(var(--primary) / 0.2) !important;
+  opacity: 1 !important;
+}
+
+.rdp-day_selected:hover {
+  background-color: hsl(var(--primary) / 0.3) !important;
+}
+
+.rdp-day_selected:hover .rdp-button,
+.rdp-day_selected:hover button {
+  background-color: hsl(var(--primary) / 0.3) !important;
+}
+
+/* Range start and end dates - full primary color */
+.rdp-day_range_start,
+.rdp-day_range_end {
+  background-color: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+  font-weight: 600 !important;
+}
+
+.rdp-day_range_start button,
+.rdp-day_range_end button,
+.rdp-day_range_start .rdp-button,
+.rdp-day_range_end .rdp-button,
+.rdp-day_range_start > *,
+.rdp-day_range_end > * {
+  background-color: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+  font-weight: 600 !important;
+}
+
+.rdp-day_range_start:hover,
+.rdp-day_range_end:hover {
+  background-color: hsl(var(--primary) / 0.9) !important;
+}
+
+.rdp-day_range_start:hover button,
+.rdp-day_range_end:hover button,
+.rdp-day_range_start:hover .rdp-button,
+.rdp-day_range_end:hover .rdp-button,
+.rdp-day_range_start:hover > *,
+.rdp-day_range_end:hover > * {
+  background-color: hsl(var(--primary) / 0.9) !important;
+}
+
+/* Range middle dates - lighter primary color for full range visibility */
+.rdp-day_range_middle {
+  background-color: hsl(var(--primary) / 0.2) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+.rdp-day_range_middle button,
+.rdp-day_range_middle .rdp-button,
+.rdp-day_range_middle > * {
+  background-color: hsl(var(--primary) / 0.2) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+.rdp-day_range_middle:hover {
+  background-color: hsl(var(--primary) / 0.3) !important;
+}
+
+.rdp-day_range_middle:hover button,
+.rdp-day_range_middle:hover .rdp-button,
+.rdp-day_range_middle:hover > * {
+  background-color: hsl(var(--primary) / 0.3) !important;
+}
+
+/* Selected days that are in the middle of range (not start/end) */
+.rdp-day_selected:not(.rdp-day_range_start):not(.rdp-day_range_end) {
+  background-color: hsl(var(--primary) / 0.2) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+.rdp-day_selected:not(.rdp-day_range_start):not(.rdp-day_range_end) button,
+.rdp-day_selected:not(.rdp-day_range_start):not(.rdp-day_range_end) .rdp-button,
+.rdp-day_selected:not(.rdp-day_range_start):not(.rdp-day_range_end) > * {
+  background-color: hsl(var(--primary) / 0.2) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+.rdp-day_selected:not(.rdp-day_range_start):not(.rdp-day_range_end):hover {
+  background-color: hsl(var(--primary) / 0.3) !important;
+}
+
+.rdp-day_selected:not(.rdp-day_range_start):not(.rdp-day_range_end):hover button,
+.rdp-day_selected:not(.rdp-day_range_start):not(.rdp-day_range_end):hover .rdp-button,
+.rdp-day_selected:not(.rdp-day_range_start):not(.rdp-day_range_end):hover > * {
+  background-color: hsl(var(--primary) / 0.3) !important;
+}
+
+/* Target the cell that contains range middle days */
+.rdp-cell:has(.rdp-day_range_middle) {
+  background-color: hsl(var(--primary) / 0.2) !important;
+}
+
+.rdp-cell:has(.rdp-day_range_middle):hover {
+  background-color: hsl(var(--primary) / 0.3) !important;
+}
+
+/* Ensure all selected days in range have background */
+.rdp-day[aria-selected="true"] .rdp-button {
+  background-color: hsl(var(--primary) / 0.2) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+/* Target cells with selected days in the middle of range */
+.rdp-cell:has(.rdp-day[aria-selected="true"]):not(:has(.rdp-day_range_start)):not(:has(.rdp-day_range_end)) {
+  background-color: hsl(var(--primary) / 0.2) !important;
+}
+
+.rdp-cell:has(.rdp-day[aria-selected="true"]):not(:has(.rdp-day_range_start)):not(:has(.rdp-day_range_end)) .rdp-button {
+  background-color: hsl(var(--primary) / 0.2) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+/* More specific targeting for cells in range */
+.rdp-cell:has(.rdp-day_range_middle),
+.rdp-cell:has(.rdp-day[aria-selected="true"]:not(.rdp-day_range_start):not(.rdp-day_range_end)) {
+  background-color: hsl(var(--primary) / 0.2) !important;
+}
+
+.rdp-cell:has(.rdp-day_range_middle) .rdp-day,
+.rdp-cell:has(.rdp-day[aria-selected="true"]:not(.rdp-day_range_start):not(.rdp-day_range_end)) .rdp-day {
+  background-color: hsl(var(--primary) / 0.2) !important;
+}
+
+/* Override for range start/end */
+.rdp-day_range_start[aria-selected="true"] .rdp-button,
+.rdp-day_range_end[aria-selected="true"] .rdp-button {
+  background-color: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+/* Target cells with range start/end */
+.rdp-cell:has(.rdp-day_range_start),
+.rdp-cell:has(.rdp-day_range_end) {
+  background-color: hsl(var(--primary)) !important;
+}
+
+.rdp-cell:has(.rdp-day_range_start) .rdp-button,
+.rdp-cell:has(.rdp-day_range_end) .rdp-button {
+  background-color: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+  font-weight: 600 !important;
+}

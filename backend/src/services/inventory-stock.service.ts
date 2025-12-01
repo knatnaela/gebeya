@@ -14,6 +14,13 @@ export interface AddStockData {
   expirationDate?: Date;
   receivedDate?: Date;
   notes?: string;
+  // Payment tracking fields
+  paymentStatus?: 'PAID' | 'CREDIT' | 'PARTIAL';
+  supplierName?: string;
+  supplierContact?: string;
+  totalCost?: number;
+  paidAmount?: number;
+  paymentDueDate?: Date;
 }
 
 export interface InventoryEntryFilters {
@@ -202,6 +209,10 @@ export class InventoryStockService {
         return `cl${timestamp}${randomStr}`;
       };
 
+      // Determine payment status and set paidAt if fully paid
+      const paymentStatus = data.paymentStatus || 'PAID';
+      const paidAt = paymentStatus === 'PAID' ? new Date() : null;
+
       // Create immutable Inventory entry
       const inventoryEntry = await tx.inventory.create({
         data: {
@@ -214,6 +225,14 @@ export class InventoryStockService {
           receivedDate: data.receivedDate || new Date(),
           notes: data.notes,
           addedBy: req.user!.userId,
+          // Payment tracking fields
+          paymentStatus: paymentStatus as any,
+          supplierName: data.supplierName,
+          supplierContact: data.supplierContact,
+          totalCost: data.totalCost,
+          paidAmount: data.paidAmount || (paymentStatus === 'PAID' ? data.totalCost : null),
+          paymentDueDate: data.paymentDueDate,
+          paidAt: paidAt,
         },
         include: {
           products: true,
@@ -629,6 +648,179 @@ export class InventoryStockService {
       console.error('Failed to send low stock alert:', error);
       // Don't throw - notification failure shouldn't break the transaction
     }
+  }
+
+  /**
+   * Get debt summary - total outstanding debt from unpaid inventory
+   */
+  async getDebtSummary(req: AuthRequest) {
+    const tenantId = getTenantId(req);
+    
+    if (!tenantId) {
+      throw new AppError('Merchant ID is required', 400);
+    }
+
+    // Get all unpaid inventory entries (CREDIT or PARTIAL status)
+    const unpaidInventory = await prisma.inventory.findMany({
+      where: {
+        products: {
+          merchantId: tenantId,
+        },
+        paymentStatus: {
+          in: ['CREDIT', 'PARTIAL'],
+        },
+      },
+      include: {
+        products: {
+          select: {
+            id: true,
+            name: true,
+            costPrice: true,
+          },
+        },
+        locations: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    // Calculate totals
+    let totalDebt = 0;
+    let totalCredit = 0;
+    let totalPartial = 0;
+    const unpaidItems: any[] = [];
+
+    unpaidInventory.forEach((entry) => {
+      const totalCost = Number(entry.totalCost || 0);
+      const paidAmount = Number(entry.paidAmount || 0);
+      const outstandingAmount = totalCost - paidAmount;
+
+      if (entry.paymentStatus === 'CREDIT') {
+        totalCredit += outstandingAmount;
+        totalDebt += outstandingAmount;
+      } else if (entry.paymentStatus === 'PARTIAL') {
+        totalPartial += outstandingAmount;
+        totalDebt += outstandingAmount;
+      }
+
+      unpaidItems.push({
+        id: entry.id,
+        productId: entry.productId,
+        productName: entry.products.name,
+        quantity: entry.quantity,
+        locationName: entry.locations.name,
+        supplierName: entry.supplierName,
+        supplierContact: entry.supplierContact,
+        totalCost: totalCost,
+        paidAmount: paidAmount,
+        outstandingAmount: outstandingAmount,
+        paymentStatus: entry.paymentStatus,
+        paymentDueDate: entry.paymentDueDate,
+        receivedDate: entry.receivedDate,
+        createdAt: entry.createdAt,
+      });
+    });
+
+    // Group by supplier
+    const supplierDebts: Record<string, { name: string; contact?: string; totalDebt: number; items: any[] }> = {};
+    
+    unpaidItems.forEach((item) => {
+      const supplierKey = item.supplierName || 'Unknown Supplier';
+      if (!supplierDebts[supplierKey]) {
+        supplierDebts[supplierKey] = {
+          name: supplierKey,
+          contact: item.supplierContact,
+          totalDebt: 0,
+          items: [],
+        };
+      }
+      supplierDebts[supplierKey].totalDebt += item.outstandingAmount;
+      supplierDebts[supplierKey].items.push(item);
+    });
+
+    return {
+      totalDebt,
+      totalCredit,
+      totalPartial,
+      unpaidCount: unpaidItems.length,
+      unpaidItems: unpaidItems.sort((a, b) => {
+        // Sort by payment due date (earliest first), then by date received
+        if (a.paymentDueDate && b.paymentDueDate) {
+          return new Date(a.paymentDueDate).getTime() - new Date(b.paymentDueDate).getTime();
+        }
+        if (a.paymentDueDate) return -1;
+        if (b.paymentDueDate) return 1;
+        return new Date(b.receivedDate).getTime() - new Date(a.receivedDate).getTime();
+      }),
+      supplierDebts: Object.values(supplierDebts).sort((a, b) => b.totalDebt - a.totalDebt),
+    };
+  }
+
+  /**
+   * Mark inventory entry as paid
+   */
+  async markAsPaid(req: AuthRequest, inventoryId: string, paidAmount?: number) {
+    const tenantId = getTenantId(req);
+    
+    if (!tenantId) {
+      throw new AppError('Merchant ID is required', 400);
+    }
+
+    // Get inventory entry and verify it belongs to the tenant
+    const inventoryEntry = await prisma.inventory.findUnique({
+      where: { id: inventoryId },
+      include: {
+        products: true,
+      },
+    });
+
+    if (!inventoryEntry) {
+      throw new AppError('Inventory entry not found', 404);
+    }
+
+    if (!ensureTenantAccess(req, inventoryEntry.products.merchantId)) {
+      throw new AppError('Access denied', 403);
+    }
+
+    const totalCost = Number(inventoryEntry.totalCost || 0);
+    const currentPaidAmount = Number(inventoryEntry.paidAmount || 0);
+    const newPaidAmount = paidAmount !== undefined ? paidAmount : totalCost;
+    const outstandingAmount = totalCost - newPaidAmount;
+
+    // Determine new payment status
+    let newPaymentStatus: 'PAID' | 'CREDIT' | 'PARTIAL' = 'PAID';
+    if (outstandingAmount > 0) {
+      newPaymentStatus = newPaidAmount > 0 ? 'PARTIAL' : 'CREDIT';
+    }
+
+    // Update inventory entry
+    const updated = await prisma.inventory.update({
+      where: { id: inventoryId },
+      data: {
+        paymentStatus: newPaymentStatus,
+        paidAmount: newPaidAmount,
+        paidAt: newPaymentStatus === 'PAID' ? new Date() : inventoryEntry.paidAt,
+      },
+      include: {
+        products: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        locations: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return updated;
   }
 }
 

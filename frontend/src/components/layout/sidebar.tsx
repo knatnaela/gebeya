@@ -24,6 +24,7 @@ import {
   Shield,
   MapPin,
   AlertTriangle,
+  Receipt,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LucideIcon } from 'lucide-react';
@@ -48,11 +49,13 @@ const merchantNavItems: NavItem[] = [
     children: [
       { name: 'Overview', href: '/merchant/inventory', icon: TrendingUp, requiredFeature: 'inventory.view' },
       { name: 'Stock Management', href: '/merchant/inventory/stock', icon: Package, requiredFeature: 'inventory.view' },
+      { name: 'Debt & Credit', href: '/merchant/inventory/debt', icon: CreditCard, requiredFeature: 'inventory.view' },
       { name: 'Low Stock', href: '/merchant/inventory/low-stock', icon: AlertTriangle, requiredFeature: 'inventory.view' },
     ],
   },
   { name: 'Locations', href: '/merchant/locations', icon: MapPin, requiredFeature: 'inventory.view' },
   { name: 'Sales', href: '/merchant/sales', icon: ShoppingCart, requiredFeature: 'sales.view' },
+  { name: 'Expenses', href: '/merchant/expenses', icon: Receipt, requiredFeature: 'sales.view' },
   { name: 'Analytics', href: '/merchant/analytics', icon: BarChart3, requiredFeature: 'analytics.view' },
   { name: 'Users', href: '/merchant/users', icon: Users, requiredFeature: 'users.view' },
   { name: 'Settings', href: '/merchant/settings', icon: Settings, requiredFeature: 'settings.view' },

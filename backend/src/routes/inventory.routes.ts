@@ -26,5 +26,9 @@ router.get('/stock/:productId', inventoryController.getCurrentStock.bind(invento
 router.post('/transfer', inventoryController.transferStock.bind(inventoryController));
 router.get('/stock/:productId/history', inventoryController.getStockHistory.bind(inventoryController));
 
+// Debt/Credit tracking routes
+router.get('/debt-summary', inventoryController.getDebtSummary.bind(inventoryController));
+router.patch('/entries/:inventoryId/mark-paid', inventoryController.markAsPaid.bind(inventoryController));
+
 export default router;
 

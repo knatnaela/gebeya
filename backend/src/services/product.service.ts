@@ -30,6 +30,10 @@ export interface ProductFilters {
   minPrice?: number;
   maxPrice?: number;
   lowStock?: boolean;
+  inStock?: boolean; // Products with stock > 0
+  outOfStock?: boolean; // Products with stock = 0
+  minStock?: number; // Minimum stock quantity
+  maxStock?: number; // Maximum stock quantity
   isActive?: boolean;
   page?: number;
   limit?: number;
@@ -38,7 +42,7 @@ export interface ProductFilters {
 export class ProductService {
   async createProduct(req: AuthRequest, data: CreateProductData) {
     const tenantId = getTenantId(req);
-    
+
     if (!tenantId) {
       throw new AppError('Merchant ID is required', 400);
     }
@@ -112,7 +116,7 @@ export class ProductService {
 
   async getProducts(req: AuthRequest, filters: ProductFilters) {
     const tenantId = getTenantId(req);
-    
+
     if (!tenantId) {
       throw new AppError('Merchant ID is required', 400);
     }
@@ -149,36 +153,83 @@ export class ProductService {
       }
     }
 
-    // Low stock filter will be handled in the query result
-    // since Prisma doesn't support field comparison directly
-
     if (filters.isActive !== undefined) {
       where.isActive = filters.isActive;
     }
 
-    let products = await prisma.products.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-    });
+    // Check if stock filters are applied
+    const hasStockFilters = filters.lowStock || filters.inStock || filters.outOfStock ||
+      filters.minStock !== undefined || filters.maxStock !== undefined;
 
-    // Filter low stock products if requested (using computed stock)
-    if (filters.lowStock) {
+    let products: any[];
+    let total: number;
+
+    if (hasStockFilters) {
+      // When stock filters are applied, we need to:
+      // 1. Fetch all products matching base filters (without pagination)
+      // 2. Calculate stock for all products
+      // 3. Filter by stock
+      // 4. Then apply pagination
+
+      const allProducts = await prisma.products.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+      });
+
       const defaultLocation = await locationService.getDefaultLocation(req);
-      const productIds = products.map((p) => p.id);
+      const productIds = allProducts.map((p) => p.id);
       const stockMap = await inventoryStockService.getCurrentStockForProducts(
         productIds,
         defaultLocation.id
       );
 
-      products = products.filter((p) => {
+      // Filter by stock
+      const filteredProducts = allProducts.filter((p) => {
         const currentStock = stockMap[p.id] || 0;
-        return currentStock <= p.lowStockThreshold;
-      });
-    }
 
-    const total = await prisma.products.count({ where });
+        // Low stock filter
+        if (filters.lowStock && currentStock > p.lowStockThreshold) {
+          return false;
+        }
+
+        // In stock filter (stock > 0)
+        if (filters.inStock && currentStock <= 0) {
+          return false;
+        }
+
+        // Out of stock filter (stock = 0)
+        if (filters.outOfStock && currentStock > 0) {
+          return false;
+        }
+
+        // Minimum stock filter
+        if (filters.minStock !== undefined && currentStock < filters.minStock) {
+          return false;
+        }
+
+        // Maximum stock filter
+        if (filters.maxStock !== undefined && currentStock > filters.maxStock) {
+          return false;
+        }
+
+        return true;
+      });
+
+      total = filteredProducts.length;
+
+      // Apply pagination after stock filtering
+      products = filteredProducts.slice(skip, skip + limit);
+    } else {
+      // No stock filters - use normal pagination
+      products = await prisma.products.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      });
+
+      total = await prisma.products.count({ where });
+    }
 
     return {
       products,
@@ -287,7 +338,7 @@ export class ProductService {
 
   async getLowStockProducts(req: AuthRequest) {
     const tenantId = getTenantId(req);
-    
+
     if (!tenantId) {
       throw new AppError('Merchant ID is required', 400);
     }
@@ -301,7 +352,7 @@ export class ProductService {
 
     // Get default location for stock calculation
     const defaultLocation = await locationService.getDefaultLocation(req);
-    
+
     // Calculate current stock for all products
     const productIds = products.map((p) => p.id);
     const stockMap = await inventoryStockService.getCurrentStockForProducts(

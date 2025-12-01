@@ -248,7 +248,7 @@ export default function NewSalePage() {
                   <SelectContent>
                     {products?.map((product: any) => (
                       <SelectItem key={product.id} value={product.id}>
-                        {product.name} - {formatCurrency(product.price)}
+                        {product.name}{product.size ? ` (${product.size})` : ''} - {formatCurrency(product.price)}
                       </SelectItem>
                     ))}
                   </SelectContent>

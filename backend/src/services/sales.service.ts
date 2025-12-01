@@ -9,6 +9,7 @@ import { AuditAction } from '@prisma/client';
 import { subscriptionService } from './subscription.service';
 import { inventoryStockService } from './inventory-stock.service';
 import { locationService } from './location.service';
+import { expenseService } from './expense.service';
 
 export interface SaleItemData {
   productId: string;
@@ -439,7 +440,7 @@ export class SalesService {
       }),
     ]);
 
-    // Calculate total net income and profit margin
+    // Calculate total cost of goods sold
     let totalCostOfGoodsSold = 0;
     sales.forEach((sale) => {
       sale.sale_items.forEach((item) => {
@@ -447,9 +448,19 @@ export class SalesService {
       });
     });
 
-    const totalNetIncome = (totalRevenue._sum.totalAmount ? Number(totalRevenue._sum.totalAmount) : 0) - totalCostOfGoodsSold;
-    const totalProfitMargin = totalRevenue._sum.totalAmount && Number(totalRevenue._sum.totalAmount) > 0
-      ? (totalNetIncome / Number(totalRevenue._sum.totalAmount)) * 100
+    // Calculate gross profit (Revenue - COGS)
+    const totalRevenueAmount = totalRevenue._sum.totalAmount ? Number(totalRevenue._sum.totalAmount) : 0;
+    const grossProfit = totalRevenueAmount - totalCostOfGoodsSold;
+
+    // Get total expenses for the same date range
+    const totalExpenses = await expenseService.getTotalExpenses(tenantId, startDate, endDate);
+
+    // Calculate net profit (Gross Profit - Expenses)
+    const netProfit = grossProfit - totalExpenses;
+
+    // Calculate profit margin based on net profit
+    const profitMargin = totalRevenueAmount > 0
+      ? (netProfit / totalRevenueAmount) * 100
       : 0;
 
     // Calculate top selling products
@@ -482,11 +493,13 @@ export class SalesService {
 
     return {
       totalSales,
-      totalRevenue: totalRevenue._sum.totalAmount || 0,
-      totalNetIncome,
-      totalProfitMargin,
+      totalRevenue: totalRevenueAmount,
       totalCostOfGoodsSold,
-      averageSaleAmount: totalSales > 0 ? Number(totalRevenue._sum.totalAmount || 0) / totalSales : 0,
+      grossProfit,
+      totalExpenses,
+      netProfit,
+      profitMargin,
+      averageSaleAmount: totalSales > 0 ? totalRevenueAmount / totalSales : 0,
       topProducts,
       dailySales,
     };

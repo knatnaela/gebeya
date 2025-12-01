@@ -14,7 +14,11 @@ const createSaleSchema = z.object({
   items: z.array(saleItemSchema).min(1, 'Sale must have at least one item'),
   locationId: z.string().optional(), // Optional, defaults to merchant's default location
   notes: z.string().optional(),
-  saleDate: z.string().datetime().optional().or(z.date().optional()), // ISO date string or Date object
+  saleDate: z.union([
+    z.string().datetime(),
+    z.string().regex(/^\d{4}-\d{2}-\d{2}$/), // Date format YYYY-MM-DD
+    z.date(),
+  ]).optional(),
   customerName: z.string().optional(),
   customerPhone: z.string().optional(),
 });
@@ -24,9 +28,22 @@ export class SalesController {
     try {
       const validatedData = createSaleSchema.parse(req.body);
       // Convert saleDate string to Date if provided
+      let saleDate: Date | undefined;
+      if (validatedData.saleDate) {
+        if (typeof validatedData.saleDate === 'string') {
+          // If it's a date string (YYYY-MM-DD), add time to make it a valid date
+          if (/^\d{4}-\d{2}-\d{2}$/.test(validatedData.saleDate)) {
+            saleDate = new Date(validatedData.saleDate + 'T00:00:00');
+          } else {
+            saleDate = new Date(validatedData.saleDate);
+          }
+        } else {
+          saleDate = validatedData.saleDate;
+        }
+      }
       const saleData = {
         ...validatedData,
-        saleDate: validatedData.saleDate ? new Date(validatedData.saleDate) : undefined,
+        saleDate,
       };
       const sale = await salesService.createSale(req, saleData);
 
