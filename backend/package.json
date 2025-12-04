@@ -1,7 +1,7 @@
 {
   "name": "gebeya-backend",
   "version": "1.0.0",
-  "description": "Backend API for Gebeya Perfume Sales Platform",
+  "description": "Backend API for Gebeya Perfume Sales Platform ",
   "main": "dist/app.js",
   "scripts": {
     "dev": "nodemon --exec ts-node src/app.ts",
