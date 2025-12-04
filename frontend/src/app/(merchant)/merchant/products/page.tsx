@@ -13,17 +13,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -31,36 +23,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Search, Edit, Trash2, Image as ImageIcon, Package, Download, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Image as ImageIcon, Package, Download, RotateCcw, ChevronLeft, ChevronRight, X, Filter } from 'lucide-react';
 import { BulkActions } from '@/components/products/bulk-actions';
 import { Checkbox as UICheckbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/currency';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import Image from 'next/image';
 import { SubscriptionErrorMessage } from '@/components/subscription/subscription-error-message';
-
-const productSchema = z.object({
-  name: z.string().min(1, 'Product name is required'),
-  brand: z.string().optional(),
-  size: z.string().optional(),
-  price: z.number().positive('Selling price must be positive'),
-  costPrice: z.number().positive('Cost price must be positive'),
-  sku: z.string().optional(),
-  barcode: z.string().optional(),
-  description: z.string().optional(),
-  lowStockThreshold: z.number().int().min(0).optional(),
-  imageUrl: z.string().url().optional().or(z.literal('')),
-  isActive: z.boolean().optional(),
-});
-
-type ProductFormData = z.infer<typeof productSchema>;
+import { ProductFormDialog, type ProductFormData } from '@/components/products/product-form-dialog';
 
 export default function ProductsPage() {
   const [search, setSearch] = useState('');
   const [stockFilter, setStockFilter] = useState<string>('all'); // 'all', 'inStock', 'outOfStock', 'lowStock'
+  const [brandFilter, setBrandFilter] = useState<string>('all');
+  const [sizeFilter, setSizeFilter] = useState<string>('all');
+  const [minPrice, setMinPrice] = useState<string>('');
+  const [maxPrice, setMaxPrice] = useState<string>('');
+  const [activeFilter, setActiveFilter] = useState<string>('all'); // 'all', 'active', 'inactive'
+  const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -68,8 +48,36 @@ export default function ProductsPage() {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const queryClient = useQueryClient();
 
+  // Fetch all products to get unique brands for filter dropdown
+  const { data: allProductsData } = useQuery({
+    queryKey: ['products', 'all-brands'],
+    queryFn: async () => {
+      const res = await apiClient.get('/products', { params: { limit: 1000 } });
+      return res.data.data || [];
+    },
+    retry: false,
+  });
+
+  // Get unique brands
+  const uniqueBrands = Array.from(
+    new Set(
+      allProductsData
+        ?.map((p: any) => p.brand)
+        .filter((b: string | null | undefined) => b && b.trim())
+    )
+  ).sort() as string[];
+
+  // Get unique sizes/volumes
+  const uniqueSizes = Array.from(
+    new Set(
+      allProductsData
+        ?.map((p: any) => p.size)
+        .filter((s: string | null | undefined) => s && s.trim())
+    )
+  ).sort() as string[];
+
   const { data, isLoading, error } = useQuery({
-    queryKey: ['products', search, stockFilter, page, limit],
+    queryKey: ['products', search, stockFilter, brandFilter, sizeFilter, minPrice, maxPrice, activeFilter, page, limit],
     queryFn: async () => {
       const params: any = {};
       if (search) {
@@ -79,8 +87,25 @@ export default function ProductsPage() {
         params.inStock = 'true';
       } else if (stockFilter === 'outOfStock') {
         params.outOfStock = 'true';
-      } else if (stockFilter === 'lowStock') {
+      } else       if (stockFilter === 'lowStock') {
         params.lowStock = 'true';
+      }
+      if (brandFilter && brandFilter !== 'all') {
+        params.brand = brandFilter;
+      }
+      if (sizeFilter && sizeFilter !== 'all') {
+        params.size = sizeFilter;
+      }
+      if (minPrice) {
+        params.minPrice = minPrice;
+      }
+      if (maxPrice) {
+        params.maxPrice = maxPrice;
+      }
+      if (activeFilter === 'active') {
+        params.isActive = 'true';
+      } else if (activeFilter === 'inactive') {
+        params.isActive = 'false';
       }
       params.page = page;
       params.limit = limit;
@@ -144,7 +169,6 @@ export default function ProductsPage() {
       queryClient.refetchQueries({ queryKey: ['products'] });
       toast.success('Product created successfully');
       setIsDialogOpen(false);
-      reset();
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.error || 'Failed to create product');
@@ -161,7 +185,6 @@ export default function ProductsPage() {
       toast.success('Product updated successfully');
       setIsDialogOpen(false);
       setEditingProduct(null);
-      reset();
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.error || 'Failed to update product');
@@ -196,39 +219,8 @@ export default function ProductsPage() {
     },
   });
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    control,
-    formState: { errors },
-  } = useForm<ProductFormData>({
-    resolver: zodResolver(productSchema),
-  });
-
-  const onSubmit = (data: ProductFormData) => {
-    if (editingProduct) {
-      updateMutation.mutate({ id: editingProduct.id, data });
-    } else {
-      createMutation.mutate(data);
-    }
-  };
-
   const handleEdit = (product: any) => {
     setEditingProduct(product);
-    reset({
-      name: product.name,
-      brand: product.brand || '',
-      size: product.size || '',
-      price: Number(product.price),
-      costPrice: Number(product.costPrice || 0),
-      sku: product.sku || '',
-      barcode: product.barcode || '',
-      description: product.description || '',
-      lowStockThreshold: product.lowStockThreshold,
-      imageUrl: product.imageUrl || '',
-      isActive: product.isActive ?? true,
-    });
     setIsDialogOpen(true);
   };
 
@@ -246,20 +238,21 @@ export default function ProductsPage() {
 
   const handleNewProduct = () => {
     setEditingProduct(null);
-    reset({
-      name: '',
-      brand: '',
-      size: '',
-      price: 0,
-      costPrice: 0,
-      sku: '',
-      barcode: '',
-      description: '',
-      lowStockThreshold: 5,
-      imageUrl: '',
-    });
     setIsDialogOpen(true);
   };
+
+  const clearFilters = () => {
+    setSearch('');
+    setStockFilter('all');
+    setBrandFilter('all');
+    setSizeFilter('all');
+    setMinPrice('');
+    setMaxPrice('');
+    setActiveFilter('all');
+    setPage(1);
+  };
+
+  const hasActiveFilters = search || stockFilter !== 'all' || brandFilter !== 'all' || sizeFilter !== 'all' || minPrice || maxPrice || activeFilter !== 'all';
 
   return (
     <div className="space-y-6">
@@ -312,6 +305,26 @@ export default function ProductsPage() {
                   <SelectItem value="lowStock">Low Stock</SelectItem>
                 </SelectContent>
               </Select>
+              <Button
+                variant={showFilters ? 'default' : 'outline'}
+                onClick={() => setShowFilters(!showFilters)}
+                className="gap-2"
+              >
+                <Filter className="h-4 w-4" />
+                More Filters
+                {hasActiveFilters && (
+                  <Badge variant="secondary" className="ml-1">
+                    {[
+                      stockFilter !== 'all' ? 1 : 0,
+                      brandFilter !== 'all' ? 1 : 0,
+                      sizeFilter !== 'all' ? 1 : 0,
+                      minPrice ? 1 : 0,
+                      maxPrice ? 1 : 0,
+                      activeFilter !== 'all' ? 1 : 0,
+                    ].reduce((a, b) => a + b, 0)}
+                  </Badge>
+                )}
+              </Button>
               <BulkActions
                 selectedIds={selectedProducts}
                 onBulkDelete={(ids) => {
@@ -348,6 +361,116 @@ export default function ProductsPage() {
             </div>
           </div>
         </CardHeader>
+        {showFilters && (
+          <CardContent className="border-b bg-muted/30">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 pb-4">
+              <div className="space-y-2">
+                <Label htmlFor="brand-filter">Brand</Label>
+                <Select
+                  value={brandFilter}
+                  onValueChange={(value) => {
+                    setBrandFilter(value);
+                    setPage(1);
+                  }}
+                >
+                  <SelectTrigger id="brand-filter">
+                    <SelectValue placeholder="All brands" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All brands</SelectItem>
+                    {uniqueBrands.map((brand) => (
+                      <SelectItem key={brand} value={brand}>
+                        {brand}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="size-filter">Size/Volume</Label>
+                <Select
+                  value={sizeFilter}
+                  onValueChange={(value) => {
+                    setSizeFilter(value);
+                    setPage(1);
+                  }}
+                >
+                  <SelectTrigger id="size-filter">
+                    <SelectValue placeholder="All sizes" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All sizes</SelectItem>
+                    {uniqueSizes.map((size) => (
+                      <SelectItem key={size} value={size}>
+                        {size}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="min-price">Min Price</Label>
+                <Input
+                  id="min-price"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={minPrice}
+                  onChange={(e) => {
+                    setMinPrice(e.target.value);
+                    setPage(1);
+                  }}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="max-price">Max Price</Label>
+                <Input
+                  id="max-price"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={maxPrice}
+                  onChange={(e) => {
+                    setMaxPrice(e.target.value);
+                    setPage(1);
+                  }}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="active-filter">Status</Label>
+                <Select
+                  value={activeFilter}
+                  onValueChange={(value) => {
+                    setActiveFilter(value);
+                    setPage(1);
+                  }}
+                >
+                  <SelectTrigger id="active-filter">
+                    <SelectValue placeholder="All statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="active">Active Only</SelectItem>
+                    <SelectItem value="inactive">Inactive Only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {hasActiveFilters && (
+              <div className="flex items-center gap-2 pt-2 border-t">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="gap-2"
+                >
+                  <X className="h-4 w-4" />
+                  Clear All Filters
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        )}
         <CardContent>
           {isLoading ? (
             <div className="text-center py-8">Loading products...</div>
@@ -543,157 +666,41 @@ export default function ProductsPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
-            <DialogDescription>
-              {editingProduct
-                ? 'Update product information'
-                : 'Fill in the details to add a new product to your inventory'}
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Product Name *</Label>
-                <Input id="name" {...register('name')} />
-                {errors.name && (
-                  <p className="text-sm text-destructive">{errors.name.message}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="brand">Brand</Label>
-                <Input id="brand" {...register('brand')} />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="size">Size</Label>
-                <Input id="size" placeholder="e.g., 50ml" {...register('size')} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="price">Selling Price *</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  step="0.01"
-                  {...register('price', { valueAsNumber: true })}
-                />
-                {errors.price && (
-                  <p className="text-sm text-destructive">{errors.price.message}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="costPrice">Cost Price (Bought Price) *</Label>
-                <Input
-                  id="costPrice"
-                  type="number"
-                  step="0.01"
-                  {...register('costPrice', { valueAsNumber: true })}
-                />
-                {errors.costPrice && (
-                  <p className="text-sm text-destructive">{errors.costPrice.message}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="sku">SKU</Label>
-                <Input id="sku" {...register('sku')} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="barcode">Barcode</Label>
-                <Input id="barcode" {...register('barcode')} />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Input id="description" {...register('description')} />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="lowStockThreshold">Low Stock Threshold</Label>
-              <Input
-                id="lowStockThreshold"
-                type="number"
-                {...register('lowStockThreshold', { valueAsNumber: true })}
-                placeholder="Default: 5"
-              />
-              <p className="text-xs text-muted-foreground">
-                Stock is managed separately. Add stock using the Stock Management page.
-              </p>
-            </div>
-
-            {editingProduct && (
-              <div className="flex items-center space-x-2">
-                <Controller
-                  name="isActive"
-                  control={control}
-                  render={({ field }) => (
-                    <UICheckbox
-                      id="isActive"
-                      checked={field.value ?? true}
-                      onCheckedChange={field.onChange}
-                    />
-                  )}
-                />
-                <Label htmlFor="isActive" className="cursor-pointer">
-                  Product is active
-                </Label>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label>Product Image</Label>
-              <div className="border rounded-lg p-4">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      // For now, just show a preview
-                      const reader = new FileReader();
-                      reader.onload = () => {
-                        // In production, this would upload to Cloudinary via backend
-                        toast.info('Image upload feature - Use URL for now');
-                      };
-                      reader.readAsDataURL(file);
-                    }
-                  }}
-                  className="w-full"
-                />
-                <Input
-                  id="imageUrl"
-                  placeholder="https://..."
-                  {...register('imageUrl')}
-                  className="mt-2"
-                />
-                <p className="text-xs text-muted-foreground mt-2">
-                  Upload image or enter direct URL (Cloudinary upload via backend coming soon)
-                </p>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsDialogOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
-                {editingProduct ? 'Update' : 'Create'} Product
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <ProductFormDialog
+        open={isDialogOpen}
+        onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) {
+            setEditingProduct(null);
+          }
+        }}
+        mode={editingProduct ? 'edit' : 'create'}
+        initialValues={
+          editingProduct
+            ? {
+                name: editingProduct.name,
+                brand: editingProduct.brand || '',
+                size: editingProduct.size || '',
+                price: Number(editingProduct.price),
+                costPrice: Number(editingProduct.costPrice || 0),
+                sku: editingProduct.sku || '',
+                barcode: editingProduct.barcode || '',
+                description: editingProduct.description || '',
+                lowStockThreshold: editingProduct.lowStockThreshold,
+                imageUrl: editingProduct.imageUrl || '',
+                isActive: editingProduct.isActive ?? true,
+              }
+            : undefined
+        }
+        isSubmitting={createMutation.isPending || updateMutation.isPending}
+        onSubmit={(data) => {
+          if (editingProduct) {
+            updateMutation.mutate({ id: editingProduct.id, data });
+          } else {
+            createMutation.mutate(data);
+          }
+        }}
+      />
     </div>
   );
 }

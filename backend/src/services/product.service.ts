@@ -27,6 +27,7 @@ export interface UpdateProductData extends Partial<CreateProductData> {
 export interface ProductFilters {
   search?: string;
   brand?: string;
+  size?: string;
   minPrice?: number;
   maxPrice?: number;
   lowStock?: boolean;
@@ -141,6 +142,10 @@ export class ProductService {
 
     if (filters.brand) {
       where.brand = { equals: filters.brand, mode: 'insensitive' };
+    }
+
+    if (filters.size) {
+      where.size = { contains: filters.size, mode: 'insensitive' };
     }
 
     if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {

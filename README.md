@@ -144,26 +144,56 @@ See `.env.example` files for detailed configuration:
 
 ## 🚢 Deployment
 
-### Backend (Railway)
+### Backend (Render - Free Tier)
 
-1. Create a Railway account and project
-2. Connect your GitHub repository
-3. Add environment variables in Railway dashboard
-4. Deploy - Railway will auto-detect Node.js
+1. Create a Render account at [render.com](https://render.com)
+2. Click "New +" → "Web Service"
+3. Connect your GitHub repository
+4. Configure:
+   - **Name**: gebeya-backend
+   - **Root Directory**: `backend`
+   - **Build Command**: `npm install && npm run build && npx prisma generate`
+   - **Start Command**: `npm start`
+   - **Environment**: Node
+5. Add environment variables:
+   - `DATABASE_URL` (from Neon)
+   - `JWT_SECRET`
+   - `FRONTEND_URL` (your Vercel frontend URL)
+   - `RESEND_API_KEY`
+   - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
+   - `NODE_ENV=production`
+   - `PORT` (Render sets this automatically)
+6. Deploy
 
-### Frontend (Vercel)
+**Note**: Render free tier spins down after 15 minutes of inactivity, but automatically wakes up when a request arrives (may take 30-60 seconds for the first request after spin-down). This is fine for most use cases and keeps your service free forever.
 
-1. Create a Vercel account
-2. Import your GitHub repository
-3. Set environment variables in Vercel dashboard
-4. Deploy - Vercel will auto-detect Next.js
+### Frontend (Vercel - Free Forever)
 
-### Database (Neon)
+1. Create a Vercel account at [vercel.com](https://vercel.com)
+2. Click "Add New" → "Project"
+3. Import your GitHub repository
+4. Configure:
+   - **Root Directory**: `frontend`
+   - **Framework Preset**: Next.js (auto-detected)
+   - **Build Command**: `npm run build` (default)
+   - **Output Directory**: `.next` (default)
+5. Add environment variables:
+   - `NEXT_PUBLIC_API_URL` (your Render backend URL)
+   - `NEXT_PUBLIC_APP_URL` (your Vercel frontend URL)
+6. Deploy
 
-1. Create a Neon account and project
-2. Get your connection string
-3. Add to backend `.env` as `DATABASE_URL`
-4. Run migrations: `npx prisma migrate deploy`
+### Database (Neon - Free Forever)
+
+1. Create a Neon account at [neon.tech](https://neon.tech)
+2. Create a new project
+3. Copy the connection string
+4. Add to Render environment variables as `DATABASE_URL`
+5. Run migrations:
+   ```bash
+   cd backend
+   npx prisma migrate deploy
+   ```
+   Or use Render's shell/console to run migrations after deployment
 
 ## 📚 API Documentation
 

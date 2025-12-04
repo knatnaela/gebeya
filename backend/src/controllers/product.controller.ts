@@ -53,6 +53,7 @@ export class ProductController {
       const filters: ProductFilters = {
         search: req.query.search as string,
         brand: req.query.brand as string,
+        size: req.query.size as string,
         minPrice: req.query.minPrice ? parseFloat(req.query.minPrice as string) : undefined,
         maxPrice: req.query.maxPrice ? parseFloat(req.query.maxPrice as string) : undefined,
         lowStock: req.query.lowStock === 'true',

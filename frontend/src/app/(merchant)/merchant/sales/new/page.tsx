@@ -34,6 +34,7 @@ import {
 import { ShoppingCart, Plus, Receipt, X, ArrowLeft, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatCurrency, formatCurrencySmart } from '@/lib/currency';
+import { ProductFormDialog, type ProductFormData } from '@/components/products/product-form-dialog';
 
 interface SaleItem {
   productId: string;
@@ -50,6 +51,7 @@ export default function NewSalePage() {
   const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState('');
   const [quantity, setQuantity] = useState('1');
+  const [isNewProductDialogOpen, setIsNewProductDialogOpen] = useState(false);
   const [notes, setNotes] = useState('');
   const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]); // Default to today
   const [customerName, setCustomerName] = useState('');
@@ -96,6 +98,35 @@ export default function NewSalePage() {
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.error || 'Failed to record sale');
+    },
+  });
+
+  const createProductMutation = useMutation({
+    mutationFn: async (data: ProductFormData) => {
+      const res = await apiClient.post('/products', data);
+      return res.data;
+    },
+    onSuccess: (data: any) => {
+      const createdProduct = data?.data || data;
+      if (!createdProduct?.id) {
+        toast.success('Product created');
+        setIsNewProductDialogOpen(false);
+        return;
+      }
+
+      // Optimistically add to local products cache used on this page
+      queryClient.setQueryData(['products'], (old: any) => {
+        if (!old || !Array.isArray(old)) return [createdProduct];
+        const exists = old.some((p: any) => p.id === createdProduct.id);
+        return exists ? old : [...old, createdProduct];
+      });
+
+      toast.success('Product created and selected');
+      setSelectedProduct(createdProduct.id);
+      setIsNewProductDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to create product');
     },
   });
 
@@ -240,7 +271,7 @@ export default function NewSalePage() {
               <CardDescription>Select products to add to the sale</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Select value={selectedProduct} onValueChange={setSelectedProduct}>
                   <SelectTrigger className="flex-1">
                     <SelectValue placeholder="Select product" />
@@ -264,6 +295,14 @@ export default function NewSalePage() {
                 <Button onClick={handleAddItem}>
                   <Plus className="mr-2 h-4 w-4" />
                   Add
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsNewProductDialogOpen(true)}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  New product
                 </Button>
               </div>
             </CardContent>
@@ -498,6 +537,14 @@ export default function NewSalePage() {
           </Card>
         </div>
       </div>
+
+      <ProductFormDialog
+        open={isNewProductDialogOpen}
+        onOpenChange={setIsNewProductDialogOpen}
+        mode="create"
+        isSubmitting={createProductMutation.isPending}
+        onSubmit={(data) => createProductMutation.mutate(data)}
+      />
 
       {/* Receipt Dialog */}
       <Dialog open={isReceiptDialogOpen} onOpenChange={setIsReceiptDialogOpen}>

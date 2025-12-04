@@ -142,6 +142,7 @@ async function main() {
       password: platformOwnerPassword,
       role: 'Platform Owner',
     });
+
     console.log('✅ Welcome email sent to platform owner');
   } catch (error) {
     console.warn('⚠️  Failed to send welcome email (this is OK if Resend is not configured):', error);

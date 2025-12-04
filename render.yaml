@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: gebeya-backend
+    env: node
+    plan: free
+    buildCommand: NODE_ENV=development npm install && npm run build && npx prisma generate
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+    # Note: PORT is automatically set by Render
+    # Add other environment variables in Render dashboard:
+    # DATABASE_URL, JWT_SECRET, FRONTEND_URL, RESEND_API_KEY, CLOUDINARY_*
+
