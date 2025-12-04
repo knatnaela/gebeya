@@ -23,7 +23,7 @@ export function ExportButton({ data, filename, type = 'sales' }: ExportButtonPro
     if (type === 'sales') {
       headers = ['Date', 'Total Amount', 'Items Count', 'User'];
       csv = [
-        headers.join(','),
+        headers,
         ...data.map((sale: any) => [
           new Date(sale.createdAt).toLocaleDateString(),
           sale.totalAmount,
@@ -36,7 +36,7 @@ export function ExportButton({ data, filename, type = 'sales' }: ExportButtonPro
     } else if (type === 'products') {
       headers = ['Name', 'Brand', 'Size', 'Price', 'SKU'];
       csv = [
-        headers.join(','),
+        headers,
         ...data.map((product: any) => [
           product.name,
           product.brand || '',
@@ -50,7 +50,7 @@ export function ExportButton({ data, filename, type = 'sales' }: ExportButtonPro
     } else {
       headers = ['Date', 'Product', 'Location', 'Type', 'Quantity', 'Reason', 'User'];
       csv = [
-        headers.join(','),
+        headers,
         ...data.map((tx: any) => [
           new Date(tx.createdAt).toLocaleDateString(),
           tx.product?.name || '',
