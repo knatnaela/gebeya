@@ -2,11 +2,11 @@
   "name": "gebeya-backend",
   "version": "1.0.0",
   "description": "Backend API for Gebeya Perfume Sales Platform ",
-  "main": "dist/app.js",
+  "main": "dist/src/app.js",
   "scripts": {
     "dev": "nodemon --exec ts-node src/app.ts",
     "build": "tsc",
-    "start": "node dist/app.js",
+    "start": "node dist/src/app.js",
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
