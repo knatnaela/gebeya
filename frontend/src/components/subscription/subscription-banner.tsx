@@ -16,16 +16,32 @@ export function SubscriptionBanner() {
   const [dismissed, setDismissed] = useState(false);
 
   // Fetch subscription status
-  const { data: subscriptionStatus } = useQuery({
+  const { data: subscriptionStatus, error: subscriptionError } = useQuery({
     queryKey: ['subscription-status'],
     queryFn: async () => {
-      const res = await apiClient.get('/subscriptions/status');
-      return res.data.data;
+      try {
+        const res = await apiClient.get('/subscriptions/status');
+        return res.data.data;
+      } catch (error: any) {
+        // Check if it's a subscription expired error
+        if (
+          error.response?.status === 403 &&
+          error.response?.data?.error === 'Trial subscription has expired'
+        ) {
+          setSubscriptionExpired(true);
+          setExpiredDetails(error.response.data.details);
+        }
+        throw error; // Re-throw to let React Query handle it
+      }
     },
     enabled: !isPlatformOwner, // Only fetch for merchants
     retry: false, // Don't retry on subscription expired errors
-    onError: (error: any) => {
-      // Check if it's a subscription expired error
+  });
+
+  // Handle subscription errors
+  useEffect(() => {
+    if (subscriptionError) {
+      const error = subscriptionError as any;
       if (
         error.response?.status === 403 &&
         error.response?.data?.error === 'Trial subscription has expired'
@@ -33,8 +49,8 @@ export function SubscriptionBanner() {
         setSubscriptionExpired(true);
         setExpiredDetails(error.response.data.details);
       }
-    },
-  });
+    }
+  }, [subscriptionError]);
 
   // Listen for subscription expired events from API interceptor
   useEffect(() => {
