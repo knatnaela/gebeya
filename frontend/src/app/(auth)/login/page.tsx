@@ -82,7 +82,7 @@ export default function LoginPage() {
               )}
             </Button>
           </form>
-          <div className="mt-6 space-y-4">
+          <div className="mt-6">
             <div className="text-center">
               <p className="text-sm text-muted-foreground">
                 Don't have an account?{' '}
@@ -90,11 +90,6 @@ export default function LoginPage() {
                   Register as Merchant
                 </Link>
               </p>
-            </div>
-            <div className="text-sm text-center text-muted-foreground border-t pt-4">
-              <p className="font-medium mb-2">Demo credentials:</p>
-              <p className="text-xs">Platform Owner: admin@gebeya.com / admin123</p>
-              <p className="text-xs">Merchant Admin: merchant@example.com / merchant123</p>
             </div>
           </div>
         </CardContent>
