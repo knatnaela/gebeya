@@ -31,12 +31,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Package, ArrowRightLeft, Search, Filter } from 'lucide-react';
+import { Plus, Package, ArrowRightLeft, Search, Filter, Check, ChevronsUpDown } from 'lucide-react';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
+import { useDebounce } from '@/hooks/use-debounce';
 
 const addStockSchema = z.object({
   productId: z.string().min(1, 'Product is required'),
@@ -69,6 +84,9 @@ type TransferStockFormData = z.infer<typeof transferStockSchema>;
 export default function StockManagementPage() {
   const [isAddStockDialogOpen, setIsAddStockDialogOpen] = useState(false);
   const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
+  const [productComboboxOpen, setProductComboboxOpen] = useState(false);
+  const [productSearch, setProductSearch] = useState('');
+  const debouncedProductSearch = useDebounce(productSearch, 500);
   const [productFilter, setProductFilter] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
   const queryClient = useQueryClient();
@@ -81,13 +99,30 @@ export default function StockManagementPage() {
     },
   });
 
-  const { data: products } = useQuery({
-    queryKey: ['products'],
+  const { data: searchedProducts, isLoading: isLoadingProducts } = useQuery({
+    queryKey: ['products', debouncedProductSearch],
+    queryFn: async () => {
+      const params: any = { isActive: true}; // Limit to 50 for search results
+      if (debouncedProductSearch) {
+        params.search = debouncedProductSearch;
+      }
+      const res = await apiClient.get('/products', { params });
+      return res.data.data || [];
+    },
+  });
+
+  // Keep the original products query for other parts of the UI (like initial load or table filters)
+  // although ideally they should also be paginated or searchable.
+  const { data: defaultProducts } = useQuery({
+    queryKey: ['products', 'default'],
     queryFn: async () => {
       const res = await apiClient.get('/products', { params: { isActive: true } });
       return res.data.data || [];
     },
+    staleTime: 5 * 60 * 1000,
   });
+
+  const products = debouncedProductSearch ? searchedProducts : (searchedProducts || defaultProducts);
 
   const { data: inventoryEntries, isLoading } = useQuery({
     queryKey: ['inventory-entries', productFilter, locationFilter],
@@ -330,21 +365,60 @@ export default function StockManagementPage() {
               <form onSubmit={handleSubmitAddStock((data) => addStockMutation.mutate(data))} className="space-y-4">
                 <div>
                   <Label htmlFor="product">Product *</Label>
-                  <Select
-                    value={watchAddStock('productId')}
-                    onValueChange={(value) => setValueAddStock('productId', value)}
-                  >
-                    <SelectTrigger id="product">
-                      <SelectValue placeholder="Select product" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {products?.map((product: any) => (
-                        <SelectItem key={product.id} value={product.id}>
-                          {product.name}{product.size ? ` (${product.size})` : ''}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover open={productComboboxOpen} onOpenChange={setProductComboboxOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={productComboboxOpen}
+                        className="w-full justify-between"
+                      >
+                        {watchAddStock('productId')
+                          ? products?.find((product: any) => product.id === watchAddStock('productId'))?.name
+                          : "Select product..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[400px] p-0">
+                      <Command shouldFilter={false}>
+                        <CommandInput 
+                          placeholder="Search product..." 
+                          value={productSearch}
+                          onValueChange={setProductSearch} 
+                        />
+                        <CommandList>
+                          {isLoadingProducts ? (
+                             <div className="py-6 text-center text-sm text-muted-foreground">Loading...</div>
+                          ) : (
+                            <>
+                              <CommandEmpty>No product found.</CommandEmpty>
+                              <CommandGroup>
+                                {products?.map((product: any) => (
+                                  <CommandItem
+                                    key={product.id}
+                                    value={product.name}
+                                    onSelect={() => {
+                                      setValueAddStock('productId', product.id)
+                                      setProductComboboxOpen(false)
+                                      setProductSearch('') // Optional: reset search after selection
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        watchAddStock('productId') === product.id ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    {product.name}{product.size ? ` (${product.size})` : ''}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </>
+                          )}
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   {errorsAddStock.productId && (
                     <p className="text-sm text-red-500 mt-1">{errorsAddStock.productId.message}</p>
                   )}
