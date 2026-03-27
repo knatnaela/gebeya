@@ -34,6 +34,7 @@ import {
 import { ShoppingCart, Plus, Receipt, X, ArrowLeft, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatCurrency, formatCurrencySmart } from '@/lib/currency';
+import { useMerchantCurrency } from '@/hooks/use-merchant-currency';
 import { ProductFormDialog, type ProductFormData } from '@/components/products/product-form-dialog';
 
 interface SaleItem {
@@ -45,6 +46,7 @@ interface SaleItem {
 }
 
 export default function NewSalePage() {
+  const currency = useMerchantCurrency();
   const router = useRouter();
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
   const [selectedSale, setSelectedSale] = useState<any>(null);
@@ -279,7 +281,7 @@ export default function NewSalePage() {
                   <SelectContent>
                     {products?.map((product: any) => (
                       <SelectItem key={product.id} value={product.id}>
-                        {product.name}{product.size ? ` (${product.size})` : ''} - {formatCurrency(product.price)}
+                        {product.name}{product.size ? ` (${product.size})` : ''} - {formatCurrency(product.price, currency)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -359,7 +361,7 @@ export default function NewSalePage() {
                             </TableCell>
                             <TableCell className="text-center">{item.quantity}</TableCell>
                             <TableCell>
-                              <span className="text-sm text-muted-foreground">{formatCurrency(costPrice)}</span>
+                              <span className="text-sm text-muted-foreground">{formatCurrency(costPrice, currency)}</span>
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
@@ -373,18 +375,18 @@ export default function NewSalePage() {
                                 />
                                 {priceDiffers && (
                                   <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                    (Default: {formatCurrency(defaultPrice)})
+                                    (Default: {formatCurrency(defaultPrice, currency)})
                                   </span>
                                 )}
                               </div>
                             </TableCell>
                             <TableCell className="font-medium text-sm">
-                              {formatCurrency(item.totalPrice)}
+                              {formatCurrency(item.totalPrice, currency)}
                             </TableCell>
                             <TableCell>
                               <div className="text-sm">
                                 <div className={`font-medium ${itemProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                  {formatCurrency(itemProfit)}
+                                  {formatCurrency(itemProfit, currency)}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
                                   {itemProfitMargin.toFixed(1)}%
@@ -499,15 +501,15 @@ export default function NewSalePage() {
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Total Revenue:</span>
-                  <span className="text-lg font-bold">{formatCurrencySmart(totalAmount)}</span>
+                  <span className="text-lg font-bold">{formatCurrencySmart(totalAmount, currency)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Cost of Goods:</span>
-                  <span className="font-medium text-orange-600">{formatCurrencySmart(totalCostOfGoods)}</span>
+                  <span className="font-medium text-orange-600">{formatCurrencySmart(totalCostOfGoods, currency)}</span>
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t">
                   <span className="text-sm font-medium">Net Income:</span>
-                  <span className="text-xl font-bold text-green-600">{formatCurrencySmart(totalNetIncome)}</span>
+                  <span className="text-xl font-bold text-green-600">{formatCurrencySmart(totalNetIncome, currency)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Profit Margin:</span>
@@ -604,17 +606,17 @@ export default function NewSalePage() {
                           <div className="flex items-center gap-2 mt-1">
                             {isDiscount && (
                               <Badge variant="outline" className="border-orange-300 text-orange-700 bg-orange-50 text-xs">
-                                Discount: -{formatCurrency(priceDiff)} ({priceDiffPercent.toFixed(1)}%)
+                                Discount: -{formatCurrency(priceDiff, currency)} ({priceDiffPercent.toFixed(1)}%)
                               </Badge>
                             )}
                             {isOverPrice && (
                               <Badge variant="outline" className="border-green-300 text-green-700 bg-green-50 text-xs">
-                                Over Price: +{formatCurrency(priceDiff)} ({priceDiffPercent.toFixed(1)}%)
+                                Over Price: +{formatCurrency(priceDiff, currency)} ({priceDiffPercent.toFixed(1)}%)
                               </Badge>
                             )}
                           </div>
                         </div>
-                        <div className="font-medium">{formatCurrency(item.totalPrice)}</div>
+                        <div className="font-medium">{formatCurrency(item.totalPrice, currency)}</div>
                       </div>
                       <div className="text-xs text-muted-foreground space-y-1 mt-1">
                         <div className="flex justify-between">
@@ -622,16 +624,16 @@ export default function NewSalePage() {
                           <div className="flex gap-2">
                             {defaultPrice !== soldPrice && (
                               <span className="line-through text-muted-foreground">
-                                {formatCurrency(defaultPrice)}
+                                {formatCurrency(defaultPrice, currency)}
                               </span>
                             )}
-                            <span>Sold: {formatCurrency(soldPrice)}</span>
+                            <span>Sold: {formatCurrency(soldPrice, currency)}</span>
                           </div>
                         </div>
                         <div className="flex justify-between">
-                          <span>Cost: {formatCurrency(costPrice)}</span>
+                          <span>Cost: {formatCurrency(costPrice, currency)}</span>
                           <span className={itemProfit >= 0 ? 'text-green-600' : 'text-red-600'}>
-                            Profit: {formatCurrency(itemProfit)} ({itemProfitMargin.toFixed(1)}%)
+                            Profit: {formatCurrency(itemProfit, currency)} ({itemProfitMargin.toFixed(1)}%)
                           </span>
                         </div>
                       </div>
@@ -643,15 +645,15 @@ export default function NewSalePage() {
               <div className="border-t pt-4 space-y-2">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Revenue:</span>
-                  <span className="font-medium">{formatCurrency(selectedSale.totalAmount)}</span>
+                  <span className="font-medium">{formatCurrency(selectedSale.totalAmount, currency)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Cost of Goods:</span>
-                  <span className="font-medium">{formatCurrency(selectedSale.costOfGoodsSold || 0)}</span>
+                  <span className="font-medium">{formatCurrency(selectedSale.costOfGoodsSold || 0, currency)}</span>
                 </div>
                 <div className="flex justify-between text-lg font-bold border-t pt-2">
                   <span>Net Income:</span>
-                  <span className="text-green-600">{formatCurrency(selectedSale.netIncome || 0)}</span>
+                  <span className="text-green-600">{formatCurrency(selectedSale.netIncome || 0, currency)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Profit Margin:</span>

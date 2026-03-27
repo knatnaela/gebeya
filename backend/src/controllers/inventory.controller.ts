@@ -52,6 +52,11 @@ const updateThresholdSchema = z.object({
   threshold: z.number().int().min(0, 'Threshold must be non-negative'),
 });
 
+const batchStockSchema = z.object({
+  productIds: z.array(z.string().min(1)).min(1).max(200),
+  locationId: z.string().optional(),
+});
+
 export class InventoryController {
   async createTransaction(req: AuthRequest, res: Response): Promise<void> {
     try {
@@ -222,6 +227,36 @@ export class InventoryController {
     }
   }
 
+  async batchStock(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const body = batchStockSchema.parse(req.body);
+      const stockByProduct = await inventoryStockService.getBatchStockForMerchant(
+        req,
+        body.productIds,
+        body.locationId
+      );
+
+      res.json({
+        success: true,
+        data: { stockByProduct },
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          success: false,
+          error: 'Validation failed',
+          details: error.issues,
+        });
+        return;
+      }
+
+      res.status((error as any).statusCode || 500).json({
+        success: false,
+        error: (error as any).message || 'Failed to fetch stock',
+      });
+    }
+  }
+
   async getCurrentStock(req: AuthRequest, res: Response): Promise<void> {
     try {
       const { productId } = req.params;
@@ -276,8 +311,11 @@ export class InventoryController {
     try {
       const { productId } = req.params;
       const locationId = req.query.locationId as string | undefined;
+      const rawLimit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
+      const limit =
+        rawLimit !== undefined && !Number.isNaN(rawLimit) ? rawLimit : 100;
 
-      const history = await inventoryStockService.getStockHistory(productId, locationId);
+      const history = await inventoryStockService.getStockHistory(productId, locationId, limit);
 
       res.json({
         success: true,

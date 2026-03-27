@@ -4,6 +4,7 @@ import { AppError } from '../middleware/error.middleware';
 import bcrypt from 'bcryptjs';
 import { MerchantStatus, UserRole } from '@prisma/client';
 import { subscriptionService } from './subscription.service';
+import { isValidMerchantCurrency, normalizeMerchantCurrency } from '../utils/currency';
 
 export interface CreateMerchantData {
   name: string;
@@ -11,6 +12,8 @@ export interface CreateMerchantData {
   phone?: string;
   address?: string;
   companyId?: string;
+  /** ISO 4217; defaults to ETB on create when omitted */
+  currency?: string;
 }
 
 export interface RegisterMerchantData {
@@ -242,22 +245,24 @@ export class MerchantService {
       _count: true,
     });
 
-    const topMerchants = await Promise.all(
-      merchantSales
-        .sort((a, b) => Number(b._sum.totalAmount || 0) - Number(a._sum.totalAmount || 0))
-        .slice(0, 5)
-        .map(async (m) => {
-          const merchant = await prisma.merchants.findUnique({
-            where: { id: m.merchantId },
+    const topSlice = merchantSales
+      .sort((a, b) => Number(b._sum.totalAmount || 0) - Number(a._sum.totalAmount || 0))
+      .slice(0, 5);
+    const topIds = topSlice.map((m) => m.merchantId);
+    const merchantRows =
+      topIds.length > 0
+        ? await prisma.merchants.findMany({
+            where: { id: { in: topIds } },
             select: { id: true, name: true, email: true },
-          });
-          return {
-            merchant,
-            totalSales: m._count,
-            totalRevenue: m._sum.totalAmount || 0,
-          };
-        })
-    );
+          })
+        : [];
+    const merchantById = new Map(merchantRows.map((row) => [row.id, row]));
+
+    const topMerchants = topSlice.map((m) => ({
+      merchant: merchantById.get(m.merchantId) ?? null,
+      totalSales: m._count,
+      totalRevenue: m._sum.totalAmount || 0,
+    }));
 
     // Calculate platform revenue from transaction fees
     const platformRevenue = salesData._sum.platformFee || 0;
@@ -316,6 +321,7 @@ export class MerchantService {
           email,
           phone,
           address,
+          currency: 'ETB',
           status: MerchantStatus.PENDING_APPROVAL,
           isActive: false, // Inactive until approved
           updatedAt: new Date(),
@@ -346,9 +352,58 @@ export class MerchantService {
         name: result.merchant.name,
         email: result.merchant.email,
         status: result.merchant.status,
+        currency: result.merchant.currency,
       },
       message: 'Merchant registration submitted. Awaiting platform owner approval.',
     };
+  }
+
+  /**
+   * Update merchant (platform owner only), e.g. currency.
+   */
+  async updateMerchant(req: AuthRequest, merchantId: string, data: UpdateMerchantData) {
+    if (req.user?.role !== 'PLATFORM_OWNER') {
+      throw new AppError('Access denied', 403);
+    }
+
+    const companyId = req.user.companyId;
+    const merchant = await prisma.merchants.findUnique({
+      where: { id: merchantId },
+    });
+
+    if (!merchant) {
+      throw new AppError('Merchant not found', 404);
+    }
+
+    if (companyId && merchant.companyId && merchant.companyId !== companyId) {
+      throw new AppError('Access denied', 403);
+    }
+
+    const updatePayload: Record<string, unknown> = {};
+
+    if (data.name !== undefined) updatePayload.name = data.name;
+    if (data.email !== undefined) updatePayload.email = data.email;
+    if (data.phone !== undefined) updatePayload.phone = data.phone;
+    if (data.address !== undefined) updatePayload.address = data.address;
+    if (data.isActive !== undefined) updatePayload.isActive = data.isActive;
+
+    if (data.currency !== undefined) {
+      if (!isValidMerchantCurrency(data.currency)) {
+        throw new AppError('Invalid currency code', 400);
+      }
+      updatePayload.currency = normalizeMerchantCurrency(data.currency);
+    }
+
+    if (Object.keys(updatePayload).length === 0) {
+      return merchant;
+    }
+
+    updatePayload.updatedAt = new Date();
+
+    return prisma.merchants.update({
+      where: { id: merchantId },
+      data: updatePayload as any,
+    });
   }
 
   /**

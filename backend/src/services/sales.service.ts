@@ -2,7 +2,7 @@ import { prisma } from '../lib/db';
 import { getTenantId, ensureTenantAccess } from '../utils/tenant';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { AppError } from '../middleware/error.middleware';
-import { InventoryTransactionType } from '@prisma/client';
+import { InventoryTransactionType, Prisma } from '@prisma/client';
 import { inventoryService } from './inventory.service';
 import { auditService } from './audit.service';
 import { AuditAction } from '@prisma/client';
@@ -34,6 +34,18 @@ export interface SalesFilters {
   userId?: string;
   page?: number;
   limit?: number;
+}
+
+/** SQL fragment for `sales` rows scoped by merchant + optional saleDate range (analytics). */
+function buildSalesAnalyticsWhereSql(
+  merchantId: string,
+  startDate?: Date,
+  endDate?: Date
+): Prisma.Sql {
+  const parts: Prisma.Sql[] = [Prisma.sql`s."merchantId" = ${merchantId}`];
+  if (startDate) parts.push(Prisma.sql`s."saleDate" >= ${startDate}`);
+  if (endDate) parts.push(Prisma.sql`s."saleDate" <= ${endDate}`);
+  return Prisma.join(parts, ' AND ');
 }
 
 export class SalesService {
@@ -85,12 +97,14 @@ export class SalesService {
       throw new AppError('Location not found or access denied', 404);
     }
 
-    // Check stock availability using computed stock
+    const uniqueProductIds = [...new Set(data.items.map((i) => i.productId))];
+    const stockMap = await inventoryStockService.getCurrentStockForProducts(uniqueProductIds, locationId);
+
     for (const item of data.items) {
       const product = products.find((p) => p.id === item.productId);
       if (!product) continue;
 
-      const currentStock = await inventoryStockService.getCurrentStock(item.productId, locationId);
+      const currentStock = stockMap[item.productId] ?? 0;
       if (currentStock < item.quantity) {
         throw new AppError(
           `Insufficient stock for ${product.name}. Available: ${currentStock}, Requested: ${item.quantity}`,
@@ -279,7 +293,7 @@ export class SalesService {
                   name: true,
                   brand: true,
                   sku: true,
-                  imageUrl: true,
+                  size: true,
                   costPrice: true,
                 },
               },
@@ -415,7 +429,9 @@ export class SalesService {
       }
     }
 
-    const [totalSales, totalRevenue, sales] = await Promise.all([
+    const whereSql = buildSalesAnalyticsWhereSql(tenantId, startDate, endDate);
+
+    const [totalSales, totalRevenue, cogsRows, topProductRows] = await Promise.all([
       prisma.sales.count({ where }),
       prisma.sales.aggregate({
         where,
@@ -423,72 +439,55 @@ export class SalesService {
           totalAmount: true,
         },
       }),
-      prisma.sales.findMany({
-        where,
-        include: {
-          sale_items: {
-            include: {
-              products: {
-                select: {
-                  name: true,
-                  costPrice: true,
-                },
-              },
-            },
-          },
-        },
-      }),
+      prisma.$queryRaw<Array<{ cogs: unknown }>>`
+        SELECT COALESCE(SUM(si.quantity * p."costPrice"), 0) AS cogs
+        FROM sale_items si
+        INNER JOIN sales s ON s.id = si."saleId"
+        INNER JOIN products p ON p.id = si."productId"
+        WHERE ${whereSql}
+      `,
+      prisma.$queryRaw<
+        Array<{
+          productId: string;
+          name: string;
+          quantity: bigint;
+          revenue: unknown;
+        }>
+      >`
+        SELECT
+          si."productId",
+          p.name,
+          SUM(si.quantity)::bigint AS quantity,
+          SUM(si."totalPrice") AS revenue
+        FROM sale_items si
+        INNER JOIN sales s ON s.id = si."saleId"
+        INNER JOIN products p ON p.id = si."productId"
+        WHERE ${whereSql}
+        GROUP BY si."productId", p.name
+        ORDER BY SUM(si.quantity) DESC
+        LIMIT 10
+      `,
     ]);
 
-    // Calculate total cost of goods sold
-    let totalCostOfGoodsSold = 0;
-    sales.forEach((sale) => {
-      sale.sale_items.forEach((item) => {
-        totalCostOfGoodsSold += item.quantity * Number(item.products.costPrice || 0);
-      });
-    });
+    const totalCostOfGoodsSold = Number(cogsRows[0]?.cogs ?? 0);
 
-    // Calculate gross profit (Revenue - COGS)
     const totalRevenueAmount = totalRevenue._sum.totalAmount ? Number(totalRevenue._sum.totalAmount) : 0;
     const grossProfit = totalRevenueAmount - totalCostOfGoodsSold;
 
-    // Get total expenses for the same date range
     const totalExpenses = await expenseService.getTotalExpenses(tenantId, startDate, endDate);
 
-    // Calculate net profit (Gross Profit - Expenses)
     const netProfit = grossProfit - totalExpenses;
 
-    // Calculate profit margin based on net profit
     const profitMargin = totalRevenueAmount > 0
       ? (netProfit / totalRevenueAmount) * 100
       : 0;
 
-    // Calculate top selling products
-    const productSales: Record<string, { name: string; quantity: number; revenue: number }> = {};
+    const topProducts = topProductRows.map((row) => ({
+      name: row.name,
+      quantity: Number(row.quantity),
+      revenue: Number(row.revenue ?? 0),
+    }));
 
-    sales.forEach((sale) => {
-      sale.sale_items.forEach((item) => {
-        const productId = item.productId;
-        const productName = item.products.name;
-        
-        if (!productSales[productId]) {
-          productSales[productId] = {
-            name: productName,
-            quantity: 0,
-            revenue: 0,
-          };
-        }
-        
-        productSales[productId].quantity += item.quantity;
-        productSales[productId].revenue += Number(item.totalPrice);
-      });
-    });
-
-    const topProducts = Object.values(productSales)
-      .sort((a, b) => b.quantity - a.quantity)
-      .slice(0, 10);
-
-    // Calculate daily sales (last 30 days if no date range)
     const dailySales = await this.getDailySales(tenantId, startDate, endDate);
 
     return {
@@ -511,41 +510,35 @@ export class SalesService {
   private async getDailySales(merchantId: string, startDate?: Date, endDate?: Date) {
     const defaultStart = new Date();
     defaultStart.setDate(defaultStart.getDate() - 30);
-    
+
     const start = startDate || defaultStart;
     const end = endDate || new Date();
 
-    const sales = await prisma.sales.findMany({
-      where: {
-        merchantId,
-        saleDate: {
-          gte: start,
-          lte: end,
-        },
-      },
-      select: {
-        saleDate: true,
-        totalAmount: true,
-      },
-    });
+    const dailyWhere = Prisma.join(
+      [
+        Prisma.sql`s."merchantId" = ${merchantId}`,
+        Prisma.sql`s."saleDate" >= ${start}`,
+        Prisma.sql`s."saleDate" <= ${end}`,
+      ],
+      ' AND '
+    );
 
-    // Group by date
-    const dailyMap: Record<string, { date: string; count: number; revenue: number }> = {};
+    const rows = await prisma.$queryRaw<Array<{ d: string; cnt: bigint; rev: unknown }>>`
+      SELECT
+        to_char(s."saleDate" AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS d,
+        COUNT(*)::bigint AS cnt,
+        SUM(s."totalAmount") AS rev
+      FROM sales s
+      WHERE ${dailyWhere}
+      GROUP BY to_char(s."saleDate" AT TIME ZONE 'UTC', 'YYYY-MM-DD')
+      ORDER BY d ASC
+    `;
 
-    sales.forEach((sale) => {
-      const date = sale.saleDate.toISOString().split('T')[0];
-      if (!dailyMap[date]) {
-        dailyMap[date] = {
-          date,
-          count: 0,
-          revenue: 0,
-        };
-      }
-      dailyMap[date].count += 1;
-      dailyMap[date].revenue += Number(sale.totalAmount);
-    });
-
-    return Object.values(dailyMap).sort((a, b) => a.date.localeCompare(b.date));
+    return rows.map((r) => ({
+      date: r.d,
+      count: Number(r.cnt),
+      revenue: Number(r.rev ?? 0),
+    }));
   }
 }
 

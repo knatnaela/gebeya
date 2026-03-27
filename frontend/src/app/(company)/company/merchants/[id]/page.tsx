@@ -56,6 +56,11 @@ export default function MerchantDetailPage() {
     },
   });
 
+  const displayCurrency =
+    typeof merchant?.currency === 'string' && merchant.currency.trim() !== ''
+      ? merchant.currency.trim().toUpperCase()
+      : 'ETB';
+
   const { data: analytics, isLoading: analyticsLoading } = useQuery({
     queryKey: ['merchant-analytics', merchantId],
     queryFn: async () => {
@@ -337,7 +342,7 @@ export default function MerchantDetailPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrencySmart(analytics?.totalRevenue || 0)}
+              {formatCurrencySmart(analytics?.totalRevenue || 0, displayCurrency)}
             </div>
           </CardContent>
         </Card>

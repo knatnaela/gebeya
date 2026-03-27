@@ -25,6 +25,8 @@ interface User {
   role: string;
   merchantId?: string;
   companyId?: string;
+  /** Nested merchant row from Prisma (`/auth/me`); includes `currency` (ISO 4217). */
+  merchants?: { id?: string; currency?: string } | null;
   permissions?: Permission[];
   roles?: Role[];
   requiresPasswordChange?: boolean;

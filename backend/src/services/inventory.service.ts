@@ -26,6 +26,9 @@ export interface InventoryFilters {
   limit?: number;
 }
 
+/** Cap payload size; counts (lowStockCount, etc.) remain exact. */
+const INVENTORY_SUMMARY_MAX_DETAIL_ITEMS = 100;
+
 export class InventoryService {
   /**
    * Create inventory transaction (adjustments, returns, etc.)
@@ -299,19 +302,23 @@ export class InventoryService {
       totalStockValue += unitCost * currentStock;
 
       if (currentStock <= product.lowStockThreshold) {
-        lowStockProducts.push({
-          id: product.id,
-          name: product.name,
-          stockQuantity: currentStock,
-          threshold: product.lowStockThreshold,
-        });
+        if (lowStockProducts.length < INVENTORY_SUMMARY_MAX_DETAIL_ITEMS) {
+          lowStockProducts.push({
+            id: product.id,
+            name: product.name,
+            stockQuantity: currentStock,
+            threshold: product.lowStockThreshold,
+          });
+        }
       }
 
       if (currentStock === 0) {
-        outOfStockProducts.push({
-          id: product.id,
-          name: product.name,
-        });
+        if (outOfStockProducts.length < INVENTORY_SUMMARY_MAX_DETAIL_ITEMS) {
+          outOfStockProducts.push({
+            id: product.id,
+            name: product.name,
+          });
+        }
       }
     }
 

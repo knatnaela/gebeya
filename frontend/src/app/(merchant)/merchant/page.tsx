@@ -10,12 +10,14 @@ import { Badge } from '@/components/ui/badge';
 import { Package, ShoppingCart, TrendingUp, TrendingDown, AlertTriangle, Clock, XCircle, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { formatCurrency, formatCurrencySmart } from '@/lib/currency';
+import { formatCurrencySmart } from '@/lib/currency';
+import { useMerchantCurrency } from '@/hooks/use-merchant-currency';
 import { format } from 'date-fns';
 import { SubscriptionErrorMessage } from '@/components/subscription/subscription-error-message';
 import { DateFilter } from '@/components/filters/date-filter';
 
 export default function MerchantDashboard() {
+  const currency = useMerchantCurrency();
   const searchParams = useSearchParams();
   const router = useRouter();
   
@@ -257,7 +259,7 @@ export default function MerchantDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {formatCurrencySmart(salesAnalytics?.totalRevenue || 0)}
+                  {formatCurrencySmart(salesAnalytics?.totalRevenue || 0, currency)}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   {startDate && endDate ? 'Selected period' : 'All time'} revenue
@@ -274,7 +276,7 @@ export default function MerchantDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-emerald-600">
-              {formatCurrencySmart(salesAnalytics?.grossProfit || 0)}
+              {formatCurrencySmart(salesAnalytics?.grossProfit || 0, currency)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">Revenue - COGS</p>
           </CardContent>
@@ -289,7 +291,7 @@ export default function MerchantDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {formatCurrencySmart(salesAnalytics?.totalExpenses || 0)}
+              {formatCurrencySmart(salesAnalytics?.totalExpenses || 0, currency)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {startDate && endDate ? 'Selected period' : 'All'} expenses
@@ -306,7 +308,7 @@ export default function MerchantDashboard() {
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${(salesAnalytics?.netProfit || 0) >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-              {formatCurrencySmart(salesAnalytics?.netProfit || 0)}
+              {formatCurrencySmart(salesAnalytics?.netProfit || 0, currency)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">Gross Profit - Expenses</p>
           </CardContent>

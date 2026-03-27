@@ -6,8 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Users, ShoppingCart, TrendingUp, Building2 } from 'lucide-react';
-import { formatCurrency, formatCurrencySmart } from '@/lib/currency';
+import { formatCurrencySmart } from '@/lib/currency';
 import Link from 'next/link';
+
+const PLATFORM_AGGREGATE_CURRENCY = 'ETB';
 import { Button } from '@/components/ui/button';
 
 export default function CompanyDashboard() {
@@ -108,7 +110,7 @@ export default function CompanyDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrencySmart(platformAnalytics?.totalRevenue || 0)}
+              {formatCurrencySmart(platformAnalytics?.totalRevenue || 0, PLATFORM_AGGREGATE_CURRENCY)}
             </div>
             <p className="text-xs text-muted-foreground">Aggregate of all merchant sales</p>
           </CardContent>
@@ -121,7 +123,7 @@ export default function CompanyDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {formatCurrencySmart(platformAnalytics?.platformRevenue || 0)}
+              {formatCurrencySmart(platformAnalytics?.platformRevenue || 0, PLATFORM_AGGREGATE_CURRENCY)}
             </div>
             <p className="text-xs text-muted-foreground">From transaction fees</p>
           </CardContent>
@@ -230,7 +232,7 @@ export default function CompanyDashboard() {
                     </div>
                     <div className="text-right">
                       <div className="font-medium">
-                        {formatCurrencySmart(item.totalRevenue)}
+                        {formatCurrencySmart(item.totalRevenue, PLATFORM_AGGREGATE_CURRENCY)}
                       </div>
                     </div>
                   </div>

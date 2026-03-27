@@ -336,7 +336,7 @@ export class ExpenseService {
       }
     }
 
-    const [totalExpenses, expensesByCategory, expenses] = await Promise.all([
+    const [totalExpenses, expensesByCategory] = await Promise.all([
       prisma.expenses.aggregate({
         where,
         _sum: {
@@ -354,13 +354,6 @@ export class ExpenseService {
         },
         _count: {
           id: true,
-        },
-      }),
-      prisma.expenses.findMany({
-        where,
-        select: {
-          category: true,
-          amount: true,
         },
       }),
     ]);

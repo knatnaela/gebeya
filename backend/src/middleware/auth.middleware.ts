@@ -42,25 +42,18 @@ export const authenticate = async (
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
     const decoded = verifyToken(token);
 
-    // Load user permissions and roles
+    // Load user permissions and roles (single assignment query) + password flag
     try {
-      const [permissions, roles] = await Promise.all([
-        permissionService.getUserPermissions(decoded.userId),
-        permissionService.getUserRoles?.(decoded.userId) || Promise.resolve([]),
-      ]);
-
-      // Check if password change is required
       const { userService } = await import('../services/user.service');
-      const requiresPasswordChange = await userService.requiresPasswordChange(decoded.userId);
+      const [{ permissions, roles }, requiresPasswordChange] = await Promise.all([
+        permissionService.getAuthContext(decoded.userId),
+        userService.requiresPasswordChange(decoded.userId),
+      ]);
 
       req.user = {
         ...decoded,
         permissions,
-        roles: roles.map((r: any) => ({
-          id: r.id,
-          name: r.name,
-          type: r.type,
-        })),
+        roles,
         requiresPasswordChange,
       };
     } catch (error) {

@@ -19,8 +19,9 @@ router.get('/transactions/:id', inventoryController.getTransactionById.bind(inve
 router.get('/summary', inventoryController.getInventorySummary.bind(inventoryController));
 router.put('/products/:id/threshold', inventoryController.updateStockThreshold.bind(inventoryController));
 
-// Stock management routes
+// Stock management routes (static paths before /stock/:productId)
 router.post('/stock', inventoryController.addStock.bind(inventoryController));
+router.post('/stock/batch', inventoryController.batchStock.bind(inventoryController));
 router.get('/entries', inventoryController.getInventoryEntries.bind(inventoryController));
 router.get('/stock/:productId', inventoryController.getCurrentStock.bind(inventoryController));
 router.post('/transfer', inventoryController.transferStock.bind(inventoryController));

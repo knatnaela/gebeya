@@ -11,8 +11,10 @@ import { ArrowLeft, Receipt, Download, TrendingUp, DollarSign, Package, User } f
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { formatCurrency, formatCurrencySmart } from '@/lib/currency';
+import { useMerchantCurrency } from '@/hooks/use-merchant-currency';
 
 export default function SaleDetailPage() {
+  const currency = useMerchantCurrency();
   const params = useParams();
   const router = useRouter();
   const saleId = params.id as string;
@@ -106,7 +108,7 @@ export default function SaleDetailPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrencySmart(sale.totalAmount)}
+              {formatCurrencySmart(sale.totalAmount, currency)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">Total sale amount</p>
           </CardContent>
@@ -121,7 +123,7 @@ export default function SaleDetailPage() {
           </CardHeader>
           <CardContent>
               <div className="text-2xl font-bold text-orange-600">
-                {formatCurrencySmart(sale.costOfGoodsSold || 0)}
+                {formatCurrencySmart(sale.costOfGoodsSold || 0, currency)}
               </div>
             <p className="text-xs text-muted-foreground mt-1">Total cost</p>
           </CardContent>
@@ -136,7 +138,7 @@ export default function SaleDetailPage() {
           </CardHeader>
           <CardContent>
               <div className="text-2xl font-bold text-emerald-600">
-                {formatCurrencySmart(sale.netIncome || 0)}
+                {formatCurrencySmart(sale.netIncome || 0, currency)}
               </div>
             <p className="text-xs text-muted-foreground mt-1">Revenue - COGS</p>
           </CardContent>
@@ -201,29 +203,29 @@ export default function SaleDetailPage() {
                         )}
                         {isDiscount && (
                           <Badge variant="outline" className="border-orange-300 text-orange-700 bg-orange-50 text-xs">
-                            Discount: -{formatCurrency(priceDiff)} ({priceDiffPercent.toFixed(1)}%)
+                            Discount: -{formatCurrency(priceDiff, currency)} ({priceDiffPercent.toFixed(1)}%)
                           </Badge>
                         )}
                         {isOverPrice && (
                           <Badge variant="outline" className="border-green-300 text-green-700 bg-green-50 text-xs">
-                            Over Price: +{formatCurrency(priceDiff)} ({priceDiffPercent.toFixed(1)}%)
+                            Over Price: +{formatCurrency(priceDiff, currency)} ({priceDiffPercent.toFixed(1)}%)
                           </Badge>
                         )}
                       </div>
                     </div>
                     <div className="text-right">
                       <div className="text-lg font-bold">
-                        {formatCurrency(item.totalPrice)}
+                        {formatCurrency(item.totalPrice, currency)}
                       </div>
                       <div className="text-sm text-muted-foreground">
                         {item.quantity} × 
                         {defaultPrice !== soldPrice ? (
                           <>
-                            <span className="line-through mx-1">{formatCurrency(defaultPrice)}</span>
-                            <span className="text-green-600 font-medium">{formatCurrency(soldPrice)}</span>
+                            <span className="line-through mx-1">{formatCurrency(defaultPrice, currency)}</span>
+                            <span className="text-green-600 font-medium">{formatCurrency(soldPrice, currency)}</span>
                           </>
                         ) : (
-                          ` ${formatCurrency(soldPrice)}`
+                          ` ${formatCurrency(soldPrice, currency)}`
                         )}
                       </div>
                     </div>
@@ -232,7 +234,7 @@ export default function SaleDetailPage() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-3 border-t">
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">Cost Price</p>
-                      <p className="font-medium">{formatCurrency(costPrice)}</p>
+                      <p className="font-medium">{formatCurrency(costPrice, currency)}</p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">
@@ -241,18 +243,18 @@ export default function SaleDetailPage() {
                       <div>
                         {defaultPrice !== soldPrice ? (
                           <>
-                            <p className="font-medium line-through text-muted-foreground">{formatCurrency(defaultPrice)}</p>
-                            <p className="font-medium text-green-600">{formatCurrency(soldPrice)}</p>
+                            <p className="font-medium line-through text-muted-foreground">{formatCurrency(defaultPrice, currency)}</p>
+                            <p className="font-medium text-green-600">{formatCurrency(soldPrice, currency)}</p>
                           </>
                         ) : (
-                          <p className="font-medium">{formatCurrency(soldPrice)}</p>
+                          <p className="font-medium">{formatCurrency(soldPrice, currency)}</p>
                         )}
                       </div>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">Item Profit</p>
                       <p className={`font-medium ${itemProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {formatCurrency(itemProfit)}
+                        {formatCurrency(itemProfit, currency)}
                       </p>
                     </div>
                     <div>
@@ -325,18 +327,18 @@ export default function SaleDetailPage() {
           <CardContent className="space-y-3">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Total Revenue:</span>
-              <span className="font-medium">{formatCurrencySmart(sale.totalAmount)}</span>
+              <span className="font-medium">{formatCurrencySmart(sale.totalAmount, currency)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Cost of Goods Sold:</span>
               <span className="font-medium text-orange-600">
-                {formatCurrencySmart(sale.costOfGoodsSold || 0)}
+                {formatCurrencySmart(sale.costOfGoodsSold || 0, currency)}
               </span>
             </div>
             <div className="flex justify-between pt-2 border-t text-lg font-bold">
               <span>Net Income:</span>
               <span className="text-emerald-600">
-                {formatCurrencySmart(sale.netIncome || 0)}
+                {formatCurrencySmart(sale.netIncome || 0, currency)}
               </span>
             </div>
             <div className="flex justify-between">

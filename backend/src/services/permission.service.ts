@@ -7,12 +7,21 @@ export interface Permission {
   actions: string[];
 }
 
+export interface AuthRoleSummary {
+  id: string;
+  name: string;
+  type: string;
+}
+
 export class PermissionService {
   /**
-   * Get all permissions for a user (from their active roles)
+   * Single DB load for role assignments + permissions + middleware role ids.
+   * Replaces parallel getUserPermissions + getUserRoles (duplicate joins).
    */
-  async getUserPermissions(userId: string): Promise<Permission[]> {
-    // Get user's active role assignments
+  async getAuthContext(userId: string): Promise<{
+    permissions: Permission[];
+    roles: AuthRoleSummary[];
+  }> {
     const assignments = await prisma.user_role_assignments.findMany({
       where: {
         userId,
@@ -31,16 +40,24 @@ export class PermissionService {
       },
     });
 
-    // Aggregate permissions from all roles
     const permissionMap = new Map<string, Permission>();
+    const roleMap = new Map<string, AuthRoleSummary>();
 
     for (const assignment of assignments) {
-      for (const roleFeature of assignment.roles.role_features) {
+      const role = assignment.roles;
+      if (!roleMap.has(role.id)) {
+        roleMap.set(role.id, {
+          id: role.id,
+          name: role.name,
+          type: role.type,
+        });
+      }
+
+      for (const roleFeature of role.role_features) {
         const feature = roleFeature.features;
         const actions = (roleFeature.actions as string[]) || [];
 
         if (permissionMap.has(feature.slug)) {
-          // Merge actions from different roles
           const existing = permissionMap.get(feature.slug)!;
           const mergedActions = [...new Set([...existing.actions, ...actions])];
           permissionMap.set(feature.slug, {
@@ -57,7 +74,18 @@ export class PermissionService {
       }
     }
 
-    return Array.from(permissionMap.values());
+    return {
+      permissions: Array.from(permissionMap.values()),
+      roles: Array.from(roleMap.values()),
+    };
+  }
+
+  /**
+   * Get all permissions for a user (from their active roles)
+   */
+  async getUserPermissions(userId: string): Promise<Permission[]> {
+    const { permissions } = await this.getAuthContext(userId);
+    return permissions;
   }
 
   /**

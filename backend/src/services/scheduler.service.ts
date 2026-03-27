@@ -1,8 +1,50 @@
 import cron from 'node-cron';
 import { prisma } from '../lib/db';
 import { notificationService } from './notification.service';
-import { salesService } from './sales.service';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
+
+/** Today's sales stats + top products without loading every sale row. */
+async function getMerchantSalesSummaryForCreatedRange(
+  merchantId: string,
+  rangeStart: Date,
+  rangeEnd: Date,
+  topLimit: number
+) {
+  const agg = await prisma.sales.aggregate({
+    where: {
+      merchantId,
+      createdAt: { gte: rangeStart, lte: rangeEnd },
+    },
+    _count: true,
+    _sum: { totalAmount: true },
+  });
+
+  if (agg._count === 0) {
+    return null;
+  }
+
+  const topRows = await prisma.$queryRaw<Array<{ name: string; quantity: bigint }>>`
+    SELECT p.name, SUM(si.quantity)::bigint AS quantity
+    FROM sale_items si
+    INNER JOIN sales s ON s.id = si."saleId"
+    INNER JOIN products p ON p.id = si."productId"
+    WHERE s."merchantId" = ${merchantId}
+      AND s."createdAt" >= ${rangeStart}
+      AND s."createdAt" <= ${rangeEnd}
+    GROUP BY p.name
+    ORDER BY SUM(si.quantity) DESC
+    LIMIT ${topLimit}
+  `;
+
+  return {
+    totalSales: agg._count,
+    totalRevenue: Number(agg._sum.totalAmount ?? 0),
+    topProducts: topRows.map((r) => ({
+      name: r.name,
+      quantity: Number(r.quantity),
+    })),
+  };
+}
 
 /**
  * Schedule daily sales summary emails
@@ -31,54 +73,18 @@ export function scheduleDailySalesSummaries() {
       const todayEnd = endOfDay(today);
 
       for (const merchant of merchants) {
-        // Get today's sales for this merchant
-        const sales = await prisma.sales.findMany({
-          where: {
-            merchantId: merchant.id,
-            createdAt: {
-              gte: todayStart,
-              lte: todayEnd,
-            },
-          },
-          include: {
-            sale_items: {
-              include: {
-                products: {
-                  select: {
-                    name: true,
-                  },
-                },
-              },
-            },
-          },
-        });
-
-        if (sales.length === 0) {
-          continue; // Skip if no sales today
-        }
-
-        // Calculate totals
-        const totalSales = sales.length;
-        const totalRevenue = sales.reduce(
-          (sum: number, sale: any) => sum + Number(sale.totalAmount),
-          0
+        const summary = await getMerchantSalesSummaryForCreatedRange(
+          merchant.id,
+          todayStart,
+          todayEnd,
+          5
         );
 
-        // Get top products
-        const productSales: Record<string, { name: string; quantity: number }> = {};
-        sales.forEach((sale: any) => {
-          sale.sale_items.forEach((item: any) => {
-            const productName = item.products.name;
-            if (!productSales[productName]) {
-              productSales[productName] = { name: productName, quantity: 0 };
-            }
-            productSales[productName].quantity += item.quantity;
-          });
-        });
+        if (!summary) {
+          continue;
+        }
 
-        const topProducts = Object.values(productSales)
-          .sort((a, b) => b.quantity - a.quantity)
-          .slice(0, 5);
+        const { totalSales, totalRevenue, topProducts } = summary;
 
         // Send email to each admin
         for (const admin of merchant.users) {
@@ -133,54 +139,18 @@ export function scheduleWeeklyReports() {
       const weekEnd = endOfDay(new Date());
 
       for (const merchant of merchants) {
-        // Get week's sales
-        const sales = await prisma.sales.findMany({
-          where: {
-            merchantId: merchant.id,
-            createdAt: {
-              gte: weekStart,
-              lte: weekEnd,
-            },
-          },
-          include: {
-            sale_items: {
-              include: {
-                products: {
-                  select: {
-                    name: true,
-                  },
-                },
-              },
-            },
-          },
-        });
-
-        if (sales.length === 0) {
-          continue; // Skip if no sales this week
-        }
-
-        // Calculate totals
-        const totalSales = sales.length;
-        const totalRevenue = sales.reduce(
-          (sum: number, sale: any) => sum + Number(sale.totalAmount),
-          0
+        const weekSummary = await getMerchantSalesSummaryForCreatedRange(
+          merchant.id,
+          weekStart,
+          weekEnd,
+          10
         );
 
-        // Get top products
-        const productSales: Record<string, { name: string; quantity: number }> = {};
-        sales.forEach((sale: any) => {
-          sale.sale_items.forEach((item: any) => {
-            const productName = item.products.name;
-            if (!productSales[productName]) {
-              productSales[productName] = { name: productName, quantity: 0 };
-            }
-            productSales[productName].quantity += item.quantity;
-          });
-        });
+        if (!weekSummary) {
+          continue;
+        }
 
-        const topProducts = Object.values(productSales)
-          .sort((a, b) => b.quantity - a.quantity)
-          .slice(0, 10);
+        const { totalSales, totalRevenue, topProducts } = weekSummary;
 
         // Get inventory status using computed stock
         const products = await prisma.products.findMany({

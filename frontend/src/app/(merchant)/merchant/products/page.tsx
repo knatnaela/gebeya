@@ -28,11 +28,13 @@ import { BulkActions } from '@/components/products/bulk-actions';
 import { Checkbox as UICheckbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/currency';
+import { useMerchantCurrency } from '@/hooks/use-merchant-currency';
 import Image from 'next/image';
 import { SubscriptionErrorMessage } from '@/components/subscription/subscription-error-message';
 import { ProductFormDialog, type ProductFormData } from '@/components/products/product-form-dialog';
 
 export default function ProductsPage() {
+  const currency = useMerchantCurrency();
   const [search, setSearch] = useState('');
   const [stockFilter, setStockFilter] = useState<string>('all'); // 'all', 'inStock', 'outOfStock', 'lowStock'
   const [brandFilter, setBrandFilter] = useState<string>('all');
@@ -536,7 +538,7 @@ export default function ProductsPage() {
                       <TableCell className="font-medium">{product.name}</TableCell>
                       <TableCell>{product.brand || '-'}</TableCell>
                       <TableCell>{product.sku || '-'}</TableCell>
-                      <TableCell>{formatCurrency(product.price)}</TableCell>
+                      <TableCell>{formatCurrency(product.price, currency)}</TableCell>
                       <TableCell>
                         <Badge
                           variant={

@@ -151,13 +151,14 @@ async function main() {
   // Create sample merchant
   const merchant = await prisma.merchants.upsert({
     where: { email: 'merchant@example.com' },
-    update: {},
+    update: { currency: 'ETB' },
     create: {
       id: generateId(),
       name: 'Sample Perfume Store',
       email: 'merchant@example.com',
       phone: '+1234567890',
       address: '123 Main St, City, Country',
+      currency: 'ETB',
       companyId: company.id,
       updatedAt: new Date(),
     },

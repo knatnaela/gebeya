@@ -17,6 +17,7 @@ router.get('/pending', merchantController.getPendingMerchants.bind(merchantContr
 router.get('/analytics', merchantController.getPlatformAnalytics.bind(merchantController));
 router.post('/:id/approve', merchantController.approveMerchant.bind(merchantController));
 router.post('/:id/reject', merchantController.rejectMerchant.bind(merchantController));
+router.put('/:id', merchantController.updateMerchant.bind(merchantController));
 router.get('/:id', merchantController.getMerchantById.bind(merchantController));
 router.get('/:id/analytics', merchantController.getMerchantAnalytics.bind(merchantController));
 

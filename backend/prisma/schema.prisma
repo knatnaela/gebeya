@@ -151,6 +151,8 @@ model merchants {
   email                  String                   @unique
   phone                  String?
   address                String?
+  /// ISO 4217 code (e.g. ETB, USD). Display only; amounts are stored as decimals.
+  currency               String                   @default("ETB")
   isActive               Boolean                  @default(true)
   companyId              String?
   createdAt              DateTime                 @default(now())
@@ -289,6 +291,7 @@ model sales {
   @@index([createdAt])
   @@index([merchantId])
   @@index([saleDate])
+  @@index([merchantId, saleDate])
 }
 
 model expenses {
@@ -307,6 +310,7 @@ model expenses {
   @@index([createdAt])
   @@index([merchantId])
   @@index([expenseDate])
+  @@index([merchantId, expenseDate])
   @@index([category])
   @@map("expenses")
 }

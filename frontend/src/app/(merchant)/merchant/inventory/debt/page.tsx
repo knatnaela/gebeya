@@ -27,9 +27,11 @@ import { AlertCircle, DollarSign, CreditCard, TrendingUp, CheckCircle2 } from 'l
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { formatCurrencySmart } from '@/lib/currency';
+import { useMerchantCurrency } from '@/hooks/use-merchant-currency';
 import { useState } from 'react';
 
 export default function DebtDashboardPage() {
+  const currency = useMerchantCurrency();
   const queryClient = useQueryClient();
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [isMarkPaidDialogOpen, setIsMarkPaidDialogOpen] = useState(false);
@@ -108,7 +110,7 @@ export default function DebtDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {formatCurrencySmart(summary.totalDebt || 0)}
+              {formatCurrencySmart(summary.totalDebt || 0, currency)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {summary.unpaidCount || 0} unpaid {summary.unpaidCount === 1 ? 'item' : 'items'}
@@ -123,7 +125,7 @@ export default function DebtDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">
-              {formatCurrencySmart(summary.totalCredit || 0)}
+              {formatCurrencySmart(summary.totalCredit || 0, currency)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">Completely unpaid items</p>
           </CardContent>
@@ -136,7 +138,7 @@ export default function DebtDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-600">
-              {formatCurrencySmart(summary.totalPartial || 0)}
+              {formatCurrencySmart(summary.totalPartial || 0, currency)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">Partially paid items</p>
           </CardContent>
@@ -165,7 +167,7 @@ export default function DebtDashboardPage() {
                   </div>
                   <div className="text-right">
                     <p className="text-lg font-bold text-red-600">
-                      {formatCurrencySmart(supplier.totalDebt)}
+                      {formatCurrencySmart(supplier.totalDebt, currency)}
                     </p>
                   </div>
                 </div>
@@ -215,10 +217,10 @@ export default function DebtDashboardPage() {
                     <TableCell>
                       <Badge variant="outline">{item.quantity}</Badge>
                     </TableCell>
-                    <TableCell>{formatCurrencySmart(item.totalCost)}</TableCell>
-                    <TableCell>{formatCurrencySmart(item.paidAmount)}</TableCell>
+                    <TableCell>{formatCurrencySmart(item.totalCost, currency)}</TableCell>
+                    <TableCell>{formatCurrencySmart(item.paidAmount, currency)}</TableCell>
                     <TableCell className="font-semibold text-red-600">
-                      {formatCurrencySmart(item.outstandingAmount)}
+                      {formatCurrencySmart(item.outstandingAmount, currency)}
                     </TableCell>
                     <TableCell>
                       {item.paymentDueDate ? (
@@ -280,7 +282,7 @@ export default function DebtDashboardPage() {
                 <p className="font-medium">{selectedItem.productName}</p>
                 <p className="text-sm text-muted-foreground mt-2">Outstanding Amount</p>
                 <p className="text-lg font-bold text-red-600">
-                  {formatCurrencySmart(selectedItem.outstandingAmount)}
+                  {formatCurrencySmart(selectedItem.outstandingAmount, currency)}
                 </p>
               </div>
 

@@ -32,13 +32,15 @@ import {
 } from '@/components/ui/select';
 import { Package, TrendingUp, TrendingDown, RefreshCw, AlertTriangle, Download } from 'lucide-react';
 import { ExportButton } from '@/components/sales/export-button';
-import { formatCurrency, formatCurrencySmart } from '@/lib/currency';
+import { formatCurrencySmart } from '@/lib/currency';
+import { useMerchantCurrency } from '@/hooks/use-merchant-currency';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { SubscriptionErrorMessage } from '@/components/subscription/subscription-error-message';
 
 export default function InventoryPage() {
+  const currency = useMerchantCurrency();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [adjustmentType, setAdjustmentType] = useState('ADJUSTMENT');
@@ -187,7 +189,7 @@ export default function InventoryPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {formatCurrencySmart(summary?.totalStockValue || 0)}
+                {formatCurrencySmart(summary?.totalStockValue || 0, currency)}
               </div>
             </CardContent>
           </Card>

@@ -35,6 +35,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { formatCurrency, formatCurrencySmart } from '@/lib/currency';
+import { useMerchantCurrency } from '@/hooks/use-merchant-currency';
 import { SubscriptionErrorMessage } from '@/components/subscription/subscription-error-message';
 import { DateFilter } from '@/components/filters/date-filter';
 
@@ -52,6 +53,7 @@ const EXPENSE_CATEGORIES = [
 ] as const;
 
 export default function ExpensesPage() {
+  const currency = useMerchantCurrency();
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [startDate, setStartDate] = useState<string | undefined>(undefined);
@@ -152,7 +154,7 @@ export default function ExpensesPage() {
         </CardHeader>
         <CardContent>
           <div className="text-3xl font-bold text-red-600">
-            {formatCurrencySmart(totalExpenses)}
+            {formatCurrencySmart(totalExpenses, currency)}
           </div>
         </CardContent>
       </Card>
@@ -248,7 +250,7 @@ export default function ExpensesPage() {
                       )}
                     </TableCell>
                     <TableCell className="font-medium text-red-600">
-                      {formatCurrency(Number(expense.amount))}
+                      {formatCurrency(Number(expense.amount), currency)}
                     </TableCell>
                     <TableCell>
                       {expense.users?.firstName || ''} {expense.users?.lastName || ''}
@@ -303,7 +305,7 @@ export default function ExpensesPage() {
                 <strong>Category:</strong> {expenseToDelete.category.replace('_', ' ')}
               </p>
               <p className="text-sm text-muted-foreground">
-                <strong>Amount:</strong> {formatCurrency(Number(expenseToDelete.amount))}
+                <strong>Amount:</strong> {formatCurrency(Number(expenseToDelete.amount), currency)}
               </p>
               {expenseToDelete.description && (
                 <p className="text-sm text-muted-foreground">

@@ -1,6 +1,16 @@
 import { Response } from 'express';
+import { z } from 'zod';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { merchantService, MerchantFilters } from '../services/merchant.service';
+
+const updateMerchantSchema = z.object({
+  name: z.string().min(1).optional(),
+  email: z.string().email().optional(),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  isActive: z.boolean().optional(),
+  currency: z.string().length(3).optional(),
+});
 
 export class MerchantController {
   async getMerchants(req: AuthRequest, res: Response): Promise<void> {
@@ -42,6 +52,32 @@ export class MerchantController {
       res.status(error.statusCode || 404).json({
         success: false,
         error: error.message || 'Merchant not found',
+      });
+    }
+  }
+
+  async updateMerchant(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const body = updateMerchantSchema.parse(req.body);
+      const merchant = await merchantService.updateMerchant(req, id, body);
+
+      res.json({
+        success: true,
+        data: merchant,
+      });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          success: false,
+          error: 'Validation failed',
+          details: error.issues,
+        });
+        return;
+      }
+      res.status(error.statusCode || 500).json({
+        success: false,
+        error: error.message || 'Failed to update merchant',
       });
     }
   }

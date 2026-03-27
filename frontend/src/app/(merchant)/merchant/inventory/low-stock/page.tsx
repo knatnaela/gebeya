@@ -16,8 +16,10 @@ import {
 import { AlertTriangle, Package, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { formatCurrency } from '@/lib/currency';
+import { useMerchantCurrency } from '@/hooks/use-merchant-currency';
 
 export default function LowStockPage() {
+  const currency = useMerchantCurrency();
   const { data: lowStockProducts, isLoading } = useQuery({
     queryKey: ['products', 'low-stock'],
     queryFn: async () => {
@@ -133,7 +135,7 @@ export default function LowStockPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>{product.lowStockThreshold}</TableCell>
-                      <TableCell>{formatCurrency(product.price)}</TableCell>
+                      <TableCell>{formatCurrency(product.price, currency)}</TableCell>
                       <TableCell>
                         {isOutOfStock ? (
                           <Badge variant="destructive">Out of Stock</Badge>

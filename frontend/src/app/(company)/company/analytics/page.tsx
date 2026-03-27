@@ -22,6 +22,9 @@ import { formatCurrency, formatCurrencySmart } from '@/lib/currency';
 
 const COLORS = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b'];
 
+/** Platform totals mix merchants that may use different ISO codes; display in ETB for a single comparable scale. */
+const PLATFORM_AGGREGATE_CURRENCY = 'ETB';
+
 export default function CompanyAnalyticsPage() {
   const { data: analytics, isLoading } = useQuery({
     queryKey: ['platform-analytics'],
@@ -64,6 +67,9 @@ export default function CompanyAnalyticsPage() {
       <div>
         <h1 className="text-3xl font-bold">Platform Analytics</h1>
         <p className="text-muted-foreground">System-wide performance metrics and insights</p>
+        <p className="text-xs text-muted-foreground mt-2">
+          Revenue totals are shown in {PLATFORM_AGGREGATE_CURRENCY} (aggregated across merchants).
+        </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
@@ -109,7 +115,7 @@ export default function CompanyAnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrencySmart(analytics?.totalRevenue || 0)}
+              {formatCurrencySmart(analytics?.totalRevenue || 0, PLATFORM_AGGREGATE_CURRENCY)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">Aggregate of all merchant sales</p>
           </CardContent>
@@ -122,7 +128,7 @@ export default function CompanyAnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {formatCurrencySmart(analytics?.platformRevenue || 0)}
+              {formatCurrencySmart(analytics?.platformRevenue || 0, PLATFORM_AGGREGATE_CURRENCY)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">From transaction fees</p>
           </CardContent>
@@ -145,16 +151,16 @@ export default function CompanyAnalyticsPage() {
                     width={80}
                     tickFormatter={(value) => {
                       if (value >= 1000) {
-                        return `ETB ${(value / 1000).toFixed(1)}k`;
+                        return formatCurrencySmart(value, PLATFORM_AGGREGATE_CURRENCY);
                       }
-                      return `ETB ${value}`;
+                      return formatCurrency(value, PLATFORM_AGGREGATE_CURRENCY);
                     }}
                   />
                   <Tooltip 
-                    formatter={(value: any) => formatCurrency(value)}
+                    formatter={(value: any) => formatCurrency(value, PLATFORM_AGGREGATE_CURRENCY)}
                   />
                   <Legend />
-                  <Bar dataKey="revenue" fill="#667eea" name="Revenue (ETB)" />
+                  <Bar dataKey="revenue" fill="#667eea" name={`Revenue (${PLATFORM_AGGREGATE_CURRENCY})`} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -207,7 +213,7 @@ export default function CompanyAnalyticsPage() {
                   </div>
                   <div className="text-right">
                     <p className="text-2xl font-bold">
-                      {formatCurrencySmart(item.totalRevenue || 0)}
+                      {formatCurrencySmart(item.totalRevenue || 0, PLATFORM_AGGREGATE_CURRENCY)}
                     </p>
                   </div>
                 </div>

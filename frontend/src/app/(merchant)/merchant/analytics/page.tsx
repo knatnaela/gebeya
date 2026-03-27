@@ -18,8 +18,11 @@ import {
 } from 'recharts';
 import { TrendingUp, Package, DollarSign } from 'lucide-react';
 import { formatCurrency, formatCurrencySmart } from '@/lib/currency';
+import { useMerchantCurrency } from '@/hooks/use-merchant-currency';
 
 export default function AnalyticsPage() {
+  const currency = useMerchantCurrency();
+  const revenueSeriesName = `Revenue (${currency})`;
   const { data: salesAnalytics, isLoading } = useQuery({
     queryKey: ['sales-analytics'],
     queryFn: async () => {
@@ -78,7 +81,7 @@ export default function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrencySmart(salesAnalytics?.totalRevenue || 0)}
+              {formatCurrencySmart(salesAnalytics?.totalRevenue || 0, currency)}
             </div>
             <p className="text-xs text-muted-foreground">All time revenue</p>
           </CardContent>
@@ -91,7 +94,7 @@ export default function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {formatCurrencySmart(salesAnalytics?.totalNetIncome || 0)}
+              {formatCurrencySmart(salesAnalytics?.totalNetIncome || 0, currency)}
             </div>
             <p className="text-xs text-muted-foreground">Revenue - COGS</p>
           </CardContent>
@@ -117,7 +120,7 @@ export default function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(salesAnalytics?.averageSaleAmount || 0)}
+              {formatCurrency(salesAnalytics?.averageSaleAmount || 0, currency)}
             </div>
             <p className="text-xs text-muted-foreground">Per transaction</p>
           </CardContent>
@@ -139,15 +142,15 @@ export default function AnalyticsPage() {
                   width={80}
                   tickFormatter={(value) => {
                     if (value >= 1000) {
-                      return `ETB ${(value / 1000).toFixed(1)}k`;
+                      return formatCurrencySmart(value, currency);
                     }
-                    return `ETB ${value}`;
+                    return formatCurrency(value, currency);
                   }}
                 />
                 <Tooltip 
                   formatter={(value: any, name: string) => {
-                    if (name === 'Revenue (ETB)') {
-                      return formatCurrency(value);
+                    if (name === revenueSeriesName) {
+                      return formatCurrency(value, currency);
                     }
                     return value;
                   }}
@@ -164,7 +167,7 @@ export default function AnalyticsPage() {
                   type="monotone"
                   dataKey="revenue"
                   stroke="#10b981"
-                  name="Revenue (ETB)"
+                  name={revenueSeriesName}
                   strokeWidth={2}
                 />
               </LineChart>
@@ -189,7 +192,7 @@ export default function AnalyticsPage() {
                   tickFormatter={(value) => {
                     // Format for revenue (large values)
                     if (value >= 1000) {
-                      return `ETB ${(value / 1000).toFixed(1)}k`;
+                      return formatCurrencySmart(value, currency);
                     }
                     // For quantity (smaller values), show as-is
                     return value.toString();
@@ -197,15 +200,15 @@ export default function AnalyticsPage() {
                 />
                 <Tooltip 
                   formatter={(value: any, name: string) => {
-                    if (name === 'Revenue (ETB)') {
-                      return formatCurrency(value);
+                    if (name === revenueSeriesName) {
+                      return formatCurrency(value, currency);
                     }
                     return value;
                   }}
                 />
                 <Legend />
                 <Bar dataKey="quantity" fill="#667eea" name="Quantity Sold" />
-                <Bar dataKey="revenue" fill="#10b981" name="Revenue (ETB)" />
+                <Bar dataKey="revenue" fill="#10b981" name={revenueSeriesName} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

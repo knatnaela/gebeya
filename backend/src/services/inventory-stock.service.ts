@@ -364,9 +364,10 @@ export class InventoryStockService {
   }
 
   /**
-   * Get stock history for a product (Inventory entries + transactions)
+   * Get stock history for a product (Inventory entries + transactions).
+   * `limit` caps each list (most recent first) to avoid unbounded reads.
    */
-  async getStockHistory(productId: string, locationId?: string) {
+  async getStockHistory(productId: string, locationId?: string, limit: number = 100) {
     const product = await prisma.products.findUnique({
       where: { id: productId },
     });
@@ -374,6 +375,8 @@ export class InventoryStockService {
     if (!product) {
       throw new AppError('Product not found', 404);
     }
+
+    const take = Math.min(Math.max(limit, 1), 500);
 
     const inventoryWhere: any = { productId };
     if (locationId) {
@@ -389,6 +392,7 @@ export class InventoryStockService {
       prisma.inventory.findMany({
         where: inventoryWhere,
         orderBy: { createdAt: 'desc' },
+        take,
         include: {
           locations: {
             select: {
@@ -408,6 +412,7 @@ export class InventoryStockService {
       prisma.inventory_transactions.findMany({
         where: transactionWhere,
         orderBy: { createdAt: 'desc' },
+        take,
         include: {
           locations: {
             select: {
@@ -430,6 +435,54 @@ export class InventoryStockService {
       inventoryEntries,
       transactions,
     };
+  }
+
+  /**
+   * Batch current stock for many products at one location (merchant-scoped).
+   */
+  async getBatchStockForMerchant(
+    req: AuthRequest,
+    productIds: string[],
+    locationId?: string
+  ): Promise<Record<string, number>> {
+    const tenantId = getTenantId(req);
+
+    if (!tenantId) {
+      throw new AppError('Merchant ID is required', 400);
+    }
+
+    const uniqueIds = [...new Set(productIds)].filter(Boolean);
+    if (uniqueIds.length === 0) {
+      return {};
+    }
+    if (uniqueIds.length > 200) {
+      throw new AppError('Too many product IDs (max 200)', 400);
+    }
+
+    const rows = await prisma.products.findMany({
+      where: { id: { in: uniqueIds }, merchantId: tenantId },
+      select: { id: true },
+    });
+
+    if (rows.length !== uniqueIds.length) {
+      throw new AppError('One or more products not found or access denied', 404);
+    }
+
+    let locId = locationId;
+    if (!locId) {
+      const defaultLocation = await locationService.getDefaultLocation(req);
+      locId = defaultLocation.id;
+    }
+
+    const location = await prisma.locations.findUnique({
+      where: { id: locId },
+    });
+
+    if (!location || location.merchantId !== tenantId) {
+      throw new AppError('Location not found or access denied', 404);
+    }
+
+    return this.getCurrentStockForProducts(uniqueIds, locId);
   }
 
   /**

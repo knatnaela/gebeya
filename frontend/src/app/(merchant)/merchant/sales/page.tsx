@@ -37,10 +37,12 @@ import { ExportButton } from '@/components/sales/export-button';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { formatCurrency, formatCurrencySmart } from '@/lib/currency';
+import { useMerchantCurrency } from '@/hooks/use-merchant-currency';
 import { SubscriptionErrorMessage } from '@/components/subscription/subscription-error-message';
 import { DateFilter } from '@/components/filters/date-filter';
 
 export default function SalesPage() {
+  const currency = useMerchantCurrency();
   const router = useRouter();
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
   const [selectedSale, setSelectedSale] = useState<any>(null);
@@ -213,10 +215,10 @@ export default function SalesPage() {
                       )}
                     </TableCell>
                     <TableCell className="font-medium">
-                        {formatCurrencySmart(sale.totalAmount)}
+                        {formatCurrencySmart(sale.totalAmount, currency)}
                       </TableCell>
                       <TableCell className="font-medium text-green-600">
-                        {formatCurrencySmart(sale.netIncome || 0)}
+                        {formatCurrencySmart(sale.netIncome || 0, currency)}
                       </TableCell>
                       <TableCell className="font-medium text-blue-600">
                         {Number(sale.profitMargin || 0).toFixed(2)}%
@@ -323,17 +325,17 @@ export default function SalesPage() {
                         <div className="flex items-center gap-2 mt-1">
                           {isDiscount && (
                             <Badge variant="outline" className="border-orange-300 text-orange-700 bg-orange-50 text-xs">
-                              Discount: -{formatCurrency(priceDiff)} ({priceDiffPercent.toFixed(1)}%)
+                              Discount: -{formatCurrency(priceDiff, currency)} ({priceDiffPercent.toFixed(1)}%)
                             </Badge>
                           )}
                           {isOverPrice && (
                             <Badge variant="outline" className="border-green-300 text-green-700 bg-green-50 text-xs">
-                              Over Price: +{formatCurrency(priceDiff)} ({priceDiffPercent.toFixed(1)}%)
+                              Over Price: +{formatCurrency(priceDiff, currency)} ({priceDiffPercent.toFixed(1)}%)
                             </Badge>
                           )}
                         </div>
                       </div>
-                      <div className="font-medium">{formatCurrency(item.totalPrice)}</div>
+                      <div className="font-medium">{formatCurrency(item.totalPrice, currency)}</div>
                     </div>
                     <div className="text-xs text-muted-foreground space-y-1 mt-1">
                       <div className="flex justify-between">
@@ -341,16 +343,16 @@ export default function SalesPage() {
                         <div className="flex gap-2">
                           {defaultPrice !== soldPrice && (
                             <span className="line-through text-muted-foreground">
-                              {formatCurrency(defaultPrice)}
+                              {formatCurrency(defaultPrice, currency)}
                             </span>
                           )}
-                          <span>Sold: {formatCurrency(soldPrice)}</span>
+                          <span>Sold: {formatCurrency(soldPrice, currency)}</span>
                         </div>
                       </div>
                       <div className="flex justify-between">
-                        <span>Cost: {formatCurrency(costPrice)}</span>
+                        <span>Cost: {formatCurrency(costPrice, currency)}</span>
                         <span className={itemProfit >= 0 ? 'text-green-600' : 'text-red-600'}>
-                          Profit: {formatCurrency(itemProfit)} ({itemProfitMargin.toFixed(1)}%)
+                          Profit: {formatCurrency(itemProfit, currency)} ({itemProfitMargin.toFixed(1)}%)
                         </span>
                       </div>
                     </div>
@@ -362,15 +364,15 @@ export default function SalesPage() {
               <div className="border-t pt-4 space-y-2">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Revenue:</span>
-                  <span className="font-medium">{formatCurrencySmart(selectedSale.totalAmount)}</span>
+                  <span className="font-medium">{formatCurrencySmart(selectedSale.totalAmount, currency)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Cost of Goods:</span>
-                  <span className="font-medium">{formatCurrencySmart(selectedSale.costOfGoodsSold || 0)}</span>
+                  <span className="font-medium">{formatCurrencySmart(selectedSale.costOfGoodsSold || 0, currency)}</span>
                 </div>
                 <div className="flex justify-between text-lg font-bold border-t pt-2">
                   <span>Net Income:</span>
-                  <span className="text-green-600">{formatCurrencySmart(selectedSale.netIncome || 0)}</span>
+                  <span className="text-green-600">{formatCurrencySmart(selectedSale.netIncome || 0, currency)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Profit Margin:</span>

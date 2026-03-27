@@ -24,6 +24,27 @@ export interface UpdateProductData extends Partial<CreateProductData> {
   isActive?: boolean;
 }
 
+/** Stock filters require scanning products; guard pathological catalogs. */
+const MAX_PRODUCTS_STOCK_FILTER_SCAN = 8000;
+
+const PRODUCT_LIST_SELECT = {
+  id: true,
+  merchantId: true,
+  name: true,
+  brand: true,
+  size: true,
+  price: true,
+  sku: true,
+  barcode: true,
+  description: true,
+  lowStockThreshold: true,
+  imageUrl: true,
+  isActive: true,
+  createdAt: true,
+  updatedAt: true,
+  costPrice: true,
+} as const;
+
 export interface ProductFilters {
   search?: string;
   brand?: string;
@@ -170,15 +191,18 @@ export class ProductService {
     let total: number;
 
     if (hasStockFilters) {
-      // When stock filters are applied, we need to:
-      // 1. Fetch all products matching base filters (without pagination)
-      // 2. Calculate stock for all products
-      // 3. Filter by stock
-      // 4. Then apply pagination
+      const scanCount = await prisma.products.count({ where });
+      if (scanCount > MAX_PRODUCTS_STOCK_FILTER_SCAN) {
+        throw new AppError(
+          `Too many products (${scanCount}) to filter by stock. Narrow search, brand, or price first (limit ${MAX_PRODUCTS_STOCK_FILTER_SCAN} products).`,
+          400
+        );
+      }
 
       const allProducts = await prisma.products.findMany({
         where,
         orderBy: { createdAt: 'desc' },
+        select: PRODUCT_LIST_SELECT,
       });
 
       const defaultLocation = await locationService.getDefaultLocation(req);
@@ -353,6 +377,7 @@ export class ProductService {
         merchantId: tenantId,
         isActive: true,
       },
+      select: PRODUCT_LIST_SELECT,
     });
 
     // Get default location for stock calculation
