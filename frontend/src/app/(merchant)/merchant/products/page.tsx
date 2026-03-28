@@ -31,21 +31,21 @@ import { formatCurrency } from '@/lib/currency';
 import { useMerchantCurrency } from '@/hooks/use-merchant-currency';
 import Image from 'next/image';
 import { SubscriptionErrorMessage } from '@/components/subscription/subscription-error-message';
-import { ProductFormDialog, type ProductFormData } from '@/components/products/product-form-dialog';
+import {
+  ProductFormDialog,
+  type ProductFormData,
+  PRODUCT_MEASURE_UNIT_SHORT_LABELS,
+  type ProductMeasureUnit,
+} from '@/components/products/product-form-dialog';
 
 function formatProductSizeLabel(product: { size?: string | null; measureUnit?: string | null }) {
   const s = (product.size || '').trim();
   if (!s && !product.measureUnit) return '-';
   if (!s) return product.measureUnit || '-';
   if (!product.measureUnit) return s;
-  const unitShort: Record<string, string> = {
-    PCS: 'pcs',
-    ML: 'ml',
-    L: 'L',
-    G: 'g',
-    KG: 'kg',
-  };
-  return `${s} ${unitShort[product.measureUnit] ?? product.measureUnit}`;
+  const u = product.measureUnit as ProductMeasureUnit;
+  const short = PRODUCT_MEASURE_UNIT_SHORT_LABELS[u];
+  return `${s} ${short ?? product.measureUnit}`;
 }
 
 export default function ProductsPage() {

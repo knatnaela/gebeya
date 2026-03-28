@@ -477,4 +477,16 @@ enum ProductMeasureUnit {
   L
   G
   KG
+  /// Length / display (size label)
+  IN
+  CM
+  MM
+  M
+  FT
+  YD
+  /// Imperial / US weight & volume
+  OZ
+  LB
+  GAL
+  FL_OZ
 }

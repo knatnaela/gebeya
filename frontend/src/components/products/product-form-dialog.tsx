@@ -18,14 +18,67 @@ import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
-export const PRODUCT_MEASURE_UNITS = ['PCS', 'ML', 'L', 'G', 'KG'] as const;
+export const PRODUCT_MEASURE_UNITS = [
+  'PCS',
+  'ML',
+  'L',
+  'G',
+  'KG',
+  'IN',
+  'CM',
+  'MM',
+  'M',
+  'FT',
+  'YD',
+  'OZ',
+  'LB',
+  'GAL',
+  'FL_OZ',
+] as const;
 export type ProductMeasureUnit = (typeof PRODUCT_MEASURE_UNITS)[number];
+
+/** Short suffix for size labels (e.g. "100 ml") — shared with product table display */
+export const PRODUCT_MEASURE_UNIT_SHORT_LABELS: Record<ProductMeasureUnit, string> = {
+  PCS: 'pcs',
+  ML: 'ml',
+  L: 'L',
+  G: 'g',
+  KG: 'kg',
+  IN: 'in',
+  CM: 'cm',
+  MM: 'mm',
+  M: 'm',
+  FT: 'ft',
+  YD: 'yd',
+  OZ: 'oz',
+  LB: 'lb',
+  GAL: 'gal',
+  FL_OZ: 'fl oz',
+};
+
+const PRODUCT_MEASURE_UNIT_FORM_LABELS: Record<ProductMeasureUnit, string> = {
+  PCS: 'Pieces (pcs)',
+  ML: 'Milliliters (ml)',
+  L: 'Liters (L)',
+  G: 'Grams (g)',
+  KG: 'Kilograms (kg)',
+  IN: 'Inches (in)',
+  CM: 'Centimeters (cm)',
+  MM: 'Millimeters (mm)',
+  M: 'Meters (m)',
+  FT: 'Feet (ft)',
+  YD: 'Yards (yd)',
+  OZ: 'Ounces (oz)',
+  LB: 'Pounds (lb)',
+  GAL: 'Gallons (gal)',
+  FL_OZ: 'Fluid ounces (fl oz)',
+};
 
 export const productSchema = z.object({
   name: z.string().min(1, 'Product name is required'),
   brand: z.string().optional(),
   size: z.string().optional(),
-  measureUnit: z.enum(['PCS', 'ML', 'L', 'G', 'KG']),
+  measureUnit: z.enum(PRODUCT_MEASURE_UNITS),
   price: z.number().positive('Selling price must be positive'),
   costPrice: z.number().positive('Cost price must be positive'),
   sku: z.string().optional(),
@@ -149,12 +202,12 @@ export function ProductFormDialog({
                     <SelectTrigger id="measureUnit">
                       <SelectValue placeholder="Select unit" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="PCS">Pieces (pcs)</SelectItem>
-                      <SelectItem value="ML">Milliliters (ml)</SelectItem>
-                      <SelectItem value="L">Liters (L)</SelectItem>
-                      <SelectItem value="G">Grams (g)</SelectItem>
-                      <SelectItem value="KG">Kilograms (kg)</SelectItem>
+                    <SelectContent className="max-h-[min(24rem,70vh)]">
+                      {PRODUCT_MEASURE_UNITS.map((u) => (
+                        <SelectItem key={u} value={u}>
+                          {PRODUCT_MEASURE_UNIT_FORM_LABELS[u]}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 )}
