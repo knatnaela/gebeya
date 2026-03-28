@@ -2,7 +2,7 @@ import { prisma } from '../lib/db';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { AppError } from '../middleware/error.middleware';
 import bcrypt from 'bcryptjs';
-import { MerchantStatus, UserRole } from '@prisma/client';
+import { MerchantStatus, Prisma, RoleType, UserRole } from '@prisma/client';
 import { subscriptionService } from './subscription.service';
 import { isValidMerchantCurrency, normalizeMerchantCurrency } from '../utils/currency';
 
@@ -39,6 +39,33 @@ export interface MerchantFilters {
 }
 
 export class MerchantService {
+  private generateCuidLikeId(): string {
+    const timestamp = Date.now().toString(36);
+    const randomStr = Math.random().toString(36).substring(2, 15);
+    return `cl${timestamp}${randomStr}`;
+  }
+
+  /**
+   * System RBAC role seeded as "Merchant Admin" (see prisma/seed.ts).
+   * Permissions for the merchant web UI come from user_role_assignments → this role.
+   */
+  private async getMerchantAdminRbacRoleId(tx: Prisma.TransactionClient): Promise<string> {
+    const role = await tx.roles.findFirst({
+      where: {
+        name: 'Merchant Admin',
+        type: RoleType.MERCHANT,
+        isSystemRole: true,
+      },
+    });
+    if (!role) {
+      throw new AppError(
+        'System role "Merchant Admin" is missing. Run `npm run prisma:seed` (or create the MERCHANT system role with features).',
+        500
+      );
+    }
+    return role.id;
+  }
+
   /**
    * Get all merchants (platform owner only)
    */
@@ -476,7 +503,9 @@ export class MerchantService {
       throw new AppError('Merchant is not pending approval', 400);
     }
 
-    // Approve merchant, activate it, assign to company, and activate user accounts
+    const assignerId = req.user!.userId;
+
+    // Approve merchant, activate it, assign to company, activate users, and assign Merchant Admin RBAC
     const result = await prisma.$transaction(async (tx) => {
       // Update merchant status to ACTIVE and assign to company
       const updatedMerchant = await tx.merchants.update({
@@ -498,6 +527,38 @@ export class MerchantService {
           isActive: true,
         },
       });
+
+      const merchantAdminRoleId = await this.getMerchantAdminRbacRoleId(tx);
+      const merchantAdmins = await tx.users.findMany({
+        where: {
+          merchantId,
+          role: UserRole.MERCHANT_ADMIN,
+        },
+        select: { id: true },
+      });
+
+      for (const u of merchantAdmins) {
+        await tx.user_role_assignments.upsert({
+          where: {
+            userId_roleId: {
+              userId: u.id,
+              roleId: merchantAdminRoleId,
+            },
+          },
+          update: {
+            isActive: true,
+            assignedBy: assignerId,
+            assignedAt: new Date(),
+          },
+          create: {
+            id: this.generateCuidLikeId(),
+            userId: u.id,
+            roleId: merchantAdminRoleId,
+            assignedBy: assignerId,
+            isActive: true,
+          },
+        });
+      }
 
       return updatedMerchant;
     });
