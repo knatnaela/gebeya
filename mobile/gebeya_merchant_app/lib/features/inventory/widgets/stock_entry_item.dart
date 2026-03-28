@@ -12,10 +12,11 @@ class StockEntryItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final muted = scheme.onSurface.withValues(alpha: 0.62);
     final product = entry.product;
     final location = entry.location;
 
-    // Get product initials or fallback icon
     final productName = product?.name ?? 'Unknown Product';
 
     return InkWell(
@@ -25,19 +26,16 @@ class StockEntryItem extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Product Icon/Avatar
             Container(
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: AppColors.brandPurple.withValues(alpha: 0.1),
+                color: AppColors.brandPurple.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Center(child: Icon(AppIcons.products, color: AppColors.brandPurple, size: 24)),
             ),
             const SizedBox(width: 16),
-
-            // Content
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,7 +46,7 @@ class StockEntryItem extends StatelessWidget {
                       Expanded(
                         child: Text(
                           productName,
-                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16, color: AppColors.lightText),
+                          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16, color: scheme.onSurface),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -64,12 +62,12 @@ class StockEntryItem extends StatelessWidget {
                   Row(
                     children: [
                       if (entry.supplierName != null) ...[
-                        const Icon(AppIcons.business, size: 12, color: AppColors.lightMutedText),
+                        Icon(AppIcons.business, size: 12, color: muted),
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
                             entry.supplierName!,
-                            style: const TextStyle(fontSize: 12, color: AppColors.lightMutedText),
+                            style: TextStyle(fontSize: 12, color: muted),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -77,12 +75,12 @@ class StockEntryItem extends StatelessWidget {
                         const SizedBox(width: 12),
                       ],
                       if (location != null) ...[
-                        const Icon(AppIcons.location, size: 12, color: AppColors.lightMutedText),
+                        Icon(AppIcons.location, size: 12, color: muted),
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
                             location.name,
-                            style: const TextStyle(fontSize: 12, color: AppColors.lightMutedText),
+                            style: TextStyle(fontSize: 12, color: muted),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -97,7 +95,7 @@ class StockEntryItem extends StatelessWidget {
                       const Spacer(),
                       Text(
                         _formatDate(entry.receivedDate),
-                        style: const TextStyle(fontSize: 12, color: AppColors.lightMutedText),
+                        style: TextStyle(fontSize: 12, color: muted),
                       ),
                     ],
                   ),

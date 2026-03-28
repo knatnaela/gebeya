@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/merchant_currency_provider.dart';
-import '../../../core/ui/theme/app_colors.dart';
 import '../../../core/ui/theme/app_icons.dart';
 import '../../../core/ui/widgets/app_error_view.dart';
 import '../../../core/ui/widgets/app_loading_skeleton.dart';
@@ -23,14 +22,16 @@ class InventoryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(inventoryControllerProvider);
     final currencyCode = ref.watch(merchantCurrencyProvider);
+    final scheme = Theme.of(context).colorScheme;
+    final bg = Theme.of(context).scaffoldBackgroundColor;
 
     return Scaffold(
-      backgroundColor: AppColors.lightBackground,
+      backgroundColor: bg,
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
             SliverAppBar(
-              backgroundColor: AppColors.lightBackground,
+              backgroundColor: bg,
               scrolledUnderElevation: 0,
               expandedHeight: 120, // Height for large title
               floating: false,
@@ -41,19 +42,17 @@ class InventoryScreen extends ConsumerWidget {
                 title: Text(
                   'Inventory',
                   style: TextStyle(
-                    color: AppColors.lightText,
+                    color: scheme.onSurface,
                     fontWeight: FontWeight.bold,
-                    fontSize:
-                        24, // Smaller font size when collapsed is handled by Flutter? No, this is the expanded text size.
-                    // Actually FlexibleSpaceBar title scales.
+                    fontSize: 24,
                   ),
                 ),
-                background: Container(color: AppColors.lightBackground),
+                background: Container(color: bg),
               ),
               actions: [
                 IconButton(
                   onPressed: () {}, // Search implementation later
-                  icon: const Icon(AppIcons.search, color: AppColors.lightText),
+                  icon: Icon(AppIcons.search, color: scheme.onSurface),
                 ),
                 const SizedBox(width: 8),
               ],

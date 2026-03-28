@@ -1,13 +1,16 @@
 import 'package:json_annotation/json_annotation.dart';
 
+import '../../../models/product_measure_unit.dart';
+
 part 'update_product_dto.g.dart';
 
-@JsonSerializable()
+@JsonSerializable(includeIfNull: false)
 class UpdateProductDto {
   const UpdateProductDto({
     this.name,
     this.brand,
     this.size,
+    this.measureUnit,
     this.price,
     this.costPrice,
     this.sku,
@@ -21,6 +24,7 @@ class UpdateProductDto {
   final String? name;
   final String? brand;
   final String? size;
+  final ProductMeasureUnit? measureUnit;
   final num? price;
   final num? costPrice;
   final String? sku;

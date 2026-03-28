@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/api/api_client.dart';
 import '../../../core/api/endpoints.dart';
-import '../../../core/ui/theme/app_colors.dart';
 import '../../../core/ui/theme/app_icons.dart';
 import '../../../core/ui/widgets/app_scaffold.dart';
 import '../../../core/ui/widgets/primary_button.dart';
@@ -92,7 +91,6 @@ class _TransferStockScreenState extends ConsumerState<TransferStockScreen> {
     final selected = await showModalBottomSheet<Location>(
       context: context,
       showDragHandle: true,
-      backgroundColor: Colors.white,
       builder: (ctx) => ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: available.length,
@@ -101,7 +99,9 @@ class _TransferStockScreenState extends ConsumerState<TransferStockScreen> {
           final loc = available[index];
           return ListTile(
             title: Text(loc.name),
-            subtitle: loc.isDefault ? const Text('Default', style: TextStyle(color: Colors.blue, fontSize: 12)) : null,
+            subtitle: loc.isDefault
+                ? Text('Default', style: TextStyle(color: Theme.of(ctx).colorScheme.primary, fontSize: 12))
+                : null,
             onTap: () => Navigator.pop(ctx, loc),
           );
         },
@@ -225,9 +225,9 @@ class _TransferStockScreenState extends ConsumerState<TransferStockScreen> {
                       onTap: () => _pickLocation(true),
                     ),
                   ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8),
-                    child: Icon(AppIcons.forward, color: AppColors.lightMutedText),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Icon(AppIcons.forward, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55)),
                   ),
                   Expanded(
                     child: _SelectionCard(
@@ -244,13 +244,19 @@ class _TransferStockScreenState extends ConsumerState<TransferStockScreen> {
               const SizedBox(height: 8),
               // Stock Checker
               if (_isCheckingStock)
-                const Padding(
-                  padding: EdgeInsets.all(8.0),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
                   child: Row(
                     children: [
-                      SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
-                      SizedBox(width: 8),
-                      Text('Checking stock...', style: TextStyle(fontSize: 12, color: AppColors.lightMutedText)),
+                      const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Checking stock...',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.62),
+                        ),
+                      ),
                     ],
                   ),
                 )
@@ -317,6 +323,8 @@ class _SelectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasValue = value != null;
+    final scheme = Theme.of(context).colorScheme;
+    final muted = scheme.onSurface.withValues(alpha: 0.62);
 
     return InkWell(
       onTap: onTap,
@@ -324,8 +332,8 @@ class _SelectionCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: AppColors.lightOutline),
+          color: scheme.surface,
+          border: Border.all(color: scheme.outline.withValues(alpha: 0.55)),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -333,9 +341,9 @@ class _SelectionCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(icon, size: 14, color: AppColors.lightMutedText),
+                Icon(icon, size: 14, color: muted),
                 const SizedBox(width: 4),
-                Text(label, style: const TextStyle(fontSize: 12, color: AppColors.lightMutedText)),
+                Text(label, style: TextStyle(fontSize: 12, color: muted)),
               ],
             ),
             const SizedBox(height: 8),
@@ -344,7 +352,7 @@ class _SelectionCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: hasValue ? FontWeight.w600 : FontWeight.normal,
-                color: hasValue ? AppColors.lightText : AppColors.lightMutedText,
+                color: hasValue ? scheme.onSurface : muted,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

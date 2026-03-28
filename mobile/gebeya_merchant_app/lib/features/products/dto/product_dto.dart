@@ -1,6 +1,7 @@
 import 'package:json_annotation/json_annotation.dart';
 
 import '../../../models/product.dart';
+import '../../../models/product_measure_unit.dart';
 
 part 'product_dto.g.dart';
 
@@ -11,6 +12,7 @@ class ProductDto {
     required this.name,
     this.brand,
     this.size,
+    required this.measureUnit,
     required this.price,
     required this.costPrice,
     this.sku,
@@ -27,6 +29,7 @@ class ProductDto {
   final String name;
   final String? brand;
   final String? size;
+  final ProductMeasureUnit measureUnit;
   @JsonKey(fromJson: _numFromJson)
   final num price;
   @JsonKey(fromJson: _numFromJson)
@@ -60,6 +63,7 @@ class ProductDto {
       name: name,
       brand: brand,
       size: size,
+      measureUnit: measureUnit,
       price: price,
       costPrice: costPrice,
       sku: sku,

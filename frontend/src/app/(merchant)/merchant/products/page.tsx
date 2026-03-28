@@ -33,6 +33,21 @@ import Image from 'next/image';
 import { SubscriptionErrorMessage } from '@/components/subscription/subscription-error-message';
 import { ProductFormDialog, type ProductFormData } from '@/components/products/product-form-dialog';
 
+function formatProductSizeLabel(product: { size?: string | null; measureUnit?: string | null }) {
+  const s = (product.size || '').trim();
+  if (!s && !product.measureUnit) return '-';
+  if (!s) return product.measureUnit || '-';
+  if (!product.measureUnit) return s;
+  const unitShort: Record<string, string> = {
+    PCS: 'pcs',
+    ML: 'ml',
+    L: 'L',
+    G: 'g',
+    KG: 'kg',
+  };
+  return `${s} ${unitShort[product.measureUnit] ?? product.measureUnit}`;
+}
+
 export default function ProductsPage() {
   const currency = useMerchantCurrency();
   const [search, setSearch] = useState('');
@@ -498,6 +513,7 @@ export default function ProductsPage() {
                     <TableHead>Image</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Brand</TableHead>
+                    <TableHead>Size</TableHead>
                     <TableHead>SKU</TableHead>
                     <TableHead>Price</TableHead>
                     <TableHead>Stock</TableHead>
@@ -537,6 +553,9 @@ export default function ProductsPage() {
                       </TableCell>
                       <TableCell className="font-medium">{product.name}</TableCell>
                       <TableCell>{product.brand || '-'}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {formatProductSizeLabel(product)}
+                      </TableCell>
                       <TableCell>{product.sku || '-'}</TableCell>
                       <TableCell>{formatCurrency(product.price, currency)}</TableCell>
                       <TableCell>
@@ -683,6 +702,7 @@ export default function ProductsPage() {
                 name: editingProduct.name,
                 brand: editingProduct.brand || '',
                 size: editingProduct.size || '',
+                measureUnit: editingProduct.measureUnit || 'ML',
                 price: Number(editingProduct.price),
                 costPrice: Number(editingProduct.costPrice || 0),
                 sku: editingProduct.sku || '',

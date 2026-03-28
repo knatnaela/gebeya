@@ -12,6 +12,7 @@ class DesignShowcaseScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(title: const Text('Design Showcase')),
       body: SingleChildScrollView(
@@ -19,7 +20,7 @@ class DesignShowcaseScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _sectionHeader('Typography (Outfit + Inter)'),
+            _sectionHeader(context, 'Typography (Outfit + Inter)'),
             const SizedBox(height: 16),
             Text('Display Large', style: Theme.of(context).textTheme.displayLarge),
             Text('Headline Medium', style: Theme.of(context).textTheme.headlineMedium),
@@ -28,7 +29,7 @@ class DesignShowcaseScreen extends StatelessWidget {
             Text('Body Small (Muted text)', style: Theme.of(context).textTheme.bodySmall),
 
             const SizedBox(height: 32),
-            _sectionHeader('Buttons'),
+            _sectionHeader(context, 'Buttons'),
             const SizedBox(height: 16),
             Wrap(
               runSpacing: 16,
@@ -66,17 +67,17 @@ class DesignShowcaseScreen extends StatelessWidget {
                   shadowColor: Colors.transparent,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusSmall)),
                 ),
-                child: const Center(
+                child: Center(
                   child: Text(
                     'Premium Gradient Button',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                    style: TextStyle(color: scheme.onPrimary, fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                 ),
               ),
             ),
 
             const SizedBox(height: 32),
-            _sectionHeader('Inputs'),
+            _sectionHeader(context, 'Inputs'),
             const SizedBox(height: 16),
             const TextField(
               decoration: InputDecoration(
@@ -97,7 +98,7 @@ class DesignShowcaseScreen extends StatelessWidget {
             ),
 
             const SizedBox(height: 32),
-            _sectionHeader('Cards'),
+            _sectionHeader(context, 'Cards'),
             const SizedBox(height: 16),
             Card(
               child: Padding(
@@ -110,7 +111,7 @@ class DesignShowcaseScreen extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppColors.cardTintPurple,
+                            color: AppColors.kpiCardBackground(context, AppColors.cardTintPurple),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(Icons.analytics, color: AppColors.brandPurple),
@@ -136,7 +137,7 @@ class DesignShowcaseScreen extends StatelessWidget {
             ).animate().slideY(begin: 0.2, end: 0, duration: 600.ms, curve: Curves.easeOutQuad).fadeIn(),
 
             const SizedBox(height: 16),
-            // Gradient Card
+            // Gradient Card — on-gradient content uses onPrimary for contrast (demo).
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
@@ -154,46 +155,46 @@ class DesignShowcaseScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.star, color: Colors.white),
+                  Icon(Icons.star, color: scheme.onPrimary),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'Premium features unlocked',
-                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: scheme.onPrimary, fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   Text(
                     'Upgrade your plan to get more insights.',
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
+                    style: TextStyle(color: scheme.onPrimary.withValues(alpha: 0.85)),
                   ),
                 ],
               ),
             ).animate().scale(delay: 200.ms),
 
             const SizedBox(height: 32),
-            _sectionHeader('Number Formatting'),
+            _sectionHeader(context, 'Number Formatting'),
             const SizedBox(height: 16),
             Wrap(
               spacing: 24,
               runSpacing: 16,
               children: [
-                _formatItem('Currency', 12345.67.toCurrency('ETB')),
-                _formatItem('Number', 1234567.toFormattedInt()),
-                _formatItem('Compact', 1500000.toCompact()),
-                _formatItem('Compact Currency', 2500000.toCompactCurrency('ETB')),
+                _formatItem(context, 'Currency', 12345.67.toCurrency('ETB')),
+                _formatItem(context, 'Number', 1234567.toFormattedInt()),
+                _formatItem(context, 'Compact', 1500000.toCompact()),
+                _formatItem(context, 'Compact Currency', 2500000.toCompactCurrency('ETB')),
               ],
             ),
 
             const SizedBox(height: 32),
-            _sectionHeader('App Icons (Lucide)'),
+            _sectionHeader(context, 'App Icons (Lucide)'),
             const SizedBox(height: 16),
             Wrap(
               spacing: 24,
               runSpacing: 16,
               children: [
-                _iconItem('Dashboard', AppIcons.dashboard),
-                _iconItem('Products', AppIcons.products),
-                _iconItem('Inventory', AppIcons.inventory),
-                _iconItem('Sales', AppIcons.sales),
-                _iconItem('Settings', AppIcons.settings),
+                _iconItem(context, 'Dashboard', AppIcons.dashboard),
+                _iconItem(context, 'Products', AppIcons.products),
+                _iconItem(context, 'Inventory', AppIcons.inventory),
+                _iconItem(context, 'Sales', AppIcons.sales),
+                _iconItem(context, 'Settings', AppIcons.settings),
               ],
             ),
 
@@ -204,21 +205,23 @@ class DesignShowcaseScreen extends StatelessWidget {
     );
   }
 
-  Widget _iconItem(String label, IconData icon) {
+  Widget _iconItem(BuildContext context, String label, IconData icon) {
+    final muted = Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.62);
     return Column(
       children: [
         Icon(icon, size: 32, color: AppColors.brandPurple),
         const SizedBox(height: 8),
-        Text(label, style: const TextStyle(fontSize: 12, color: AppColors.lightMutedText)),
+        Text(label, style: TextStyle(fontSize: 12, color: muted)),
       ],
     );
   }
 
-  Widget _formatItem(String label, String value) {
+  Widget _formatItem(BuildContext context, String label, String value) {
+    final muted = Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.62);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, color: AppColors.lightMutedText)),
+        Text(label, style: TextStyle(fontSize: 12, color: muted)),
         Text(
           value,
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
@@ -227,13 +230,14 @@ class DesignShowcaseScreen extends StatelessWidget {
     );
   }
 
-  Widget _sectionHeader(String title) {
+  Widget _sectionHeader(BuildContext context, String title) {
+    final muted = Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.62);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title.toUpperCase(),
-          style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2, color: AppColors.lightMutedText),
+          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2, color: muted),
         ),
         const Divider(),
       ],

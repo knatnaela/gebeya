@@ -11,6 +11,10 @@ CreateProductDto _$CreateProductDtoFromJson(Map<String, dynamic> json) =>
       name: json['name'] as String,
       brand: json['brand'] as String?,
       size: json['size'] as String?,
+      measureUnit: $enumDecode(
+        _$ProductMeasureUnitEnumMap,
+        json['measureUnit'],
+      ),
       price: json['price'] as num,
       costPrice: json['costPrice'] as num,
       sku: json['sku'] as String?,
@@ -25,6 +29,7 @@ Map<String, dynamic> _$CreateProductDtoToJson(CreateProductDto instance) =>
       'name': instance.name,
       'brand': instance.brand,
       'size': instance.size,
+      'measureUnit': _$ProductMeasureUnitEnumMap[instance.measureUnit]!,
       'price': instance.price,
       'costPrice': instance.costPrice,
       'sku': instance.sku,
@@ -33,3 +38,11 @@ Map<String, dynamic> _$CreateProductDtoToJson(CreateProductDto instance) =>
       'lowStockThreshold': instance.lowStockThreshold,
       'imageUrl': instance.imageUrl,
     };
+
+const _$ProductMeasureUnitEnumMap = {
+  ProductMeasureUnit.PCS: 'PCS',
+  ProductMeasureUnit.ML: 'ML',
+  ProductMeasureUnit.L: 'L',
+  ProductMeasureUnit.G: 'G',
+  ProductMeasureUnit.KG: 'KG',
+};

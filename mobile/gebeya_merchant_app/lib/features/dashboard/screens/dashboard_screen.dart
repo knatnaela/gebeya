@@ -224,7 +224,10 @@ class _KpiGrid extends StatelessWidget {
         childAspectRatio: 1.25,
       ),
       itemCount: items.length,
-      itemBuilder: (context, i) => AppCard(backgroundColor: items[i].backgroundColor, child: items[i]),
+      itemBuilder: (context, i) => AppCard(
+        backgroundColor: AppColors.kpiCardBackground(context, items[i].backgroundColor),
+        child: items[i],
+      ),
     );
   }
 }

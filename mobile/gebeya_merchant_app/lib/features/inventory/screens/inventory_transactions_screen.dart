@@ -105,14 +105,16 @@ class _InventoryTransactionsScreenState extends ConsumerState<InventoryTransacti
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(inventoryControllerProvider);
+    final scheme = Theme.of(context).colorScheme;
+    final bg = Theme.of(context).scaffoldBackgroundColor;
 
     return Scaffold(
-      backgroundColor: AppColors.lightBackground,
+      backgroundColor: bg,
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
             SliverAppBar(
-              backgroundColor: AppColors.lightBackground,
+              backgroundColor: bg,
               scrolledUnderElevation: 0,
               expandedHeight: 120,
               floating: false,
@@ -122,9 +124,9 @@ class _InventoryTransactionsScreenState extends ConsumerState<InventoryTransacti
                 titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
                 title: Text(
                   'Transactions',
-                  style: GoogleFonts.outfit(color: AppColors.lightText, fontWeight: FontWeight.bold, fontSize: 24),
+                  style: GoogleFonts.outfit(color: scheme.onSurface, fontWeight: FontWeight.bold, fontSize: 24),
                 ),
-                background: Container(color: AppColors.lightBackground),
+                background: Container(color: bg),
               ),
               actions: [
                 IconButton(
@@ -140,44 +142,33 @@ class _InventoryTransactionsScreenState extends ConsumerState<InventoryTransacti
               delegate: _SliverSearchDelegate(
                 child: Container(
                   height: 60,
-                  color: AppColors.lightBackground,
+                  color: bg,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Row(
                     children: [
-                      /* Product Search - Not yet implemented in backend for transactions listing properly probably, 
-                         but keeping UI ready or relying on local filter if supported. 
-                         Current fetchTransactions doesn't support 'search' param in controller, only specific filters. 
-                         For now we can assume this searches local or triggers a product filter if implemented.
-                         Let's keep it visually consistent but maybe disabled or simple filter trigger if no text. 
-                         Ideally this should query. Let's assume it talks to 'productIdFilter' via search in future.
-                      */
                       Expanded(
                         child: TextField(
                           controller: _searchController,
-                          // readOnly: true, // Until search is fully wired
                           decoration: InputDecoration(
-                            hintText: 'Search transactions...', // Placeholder
+                            hintText: 'Search transactions...',
                             prefixIcon: const Icon(AppIcons.search, size: 20),
                             contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                             filled: true,
-                            fillColor: Colors.white,
+                            fillColor: scheme.surfaceContainerHighest,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: AppColors.lightOutline),
+                              borderSide: BorderSide(color: scheme.outline.withValues(alpha: 0.45)),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: AppColors.lightOutline),
+                              borderSide: BorderSide(color: scheme.outline.withValues(alpha: 0.45)),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: const BorderSide(color: AppColors.brandPurple),
                             ),
                           ),
-                          onChanged: (val) {
-                            // Just a UI placeholder for now as per task scope "Revamp UI"
-                            // To fix functionality we would need to update controller.
-                          },
+                          onChanged: (val) {},
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -187,11 +178,11 @@ class _InventoryTransactionsScreenState extends ConsumerState<InventoryTransacti
                         child: Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: scheme.surface,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.lightOutline),
+                            border: Border.all(color: scheme.outline.withValues(alpha: 0.45)),
                           ),
-                          child: const Icon(AppIcons.filter, size: 20, color: AppColors.lightText),
+                          child: Icon(AppIcons.filter, size: 20, color: scheme.onSurface),
                         ),
                       ),
                     ],
@@ -253,7 +244,6 @@ class _InventoryTransactionsScreenState extends ConsumerState<InventoryTransacti
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
       builder: (ctx) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -287,7 +277,7 @@ class _TransactionItem extends StatelessWidget {
       case InventoryTransactionType.sale:
         return 'Sale';
       case InventoryTransactionType.adjustment:
-        return 'Axjustment';
+        return 'Adjustment';
       case InventoryTransactionType.restock:
         return 'Restock';
       case InventoryTransactionType.return_:
@@ -341,11 +331,13 @@ class _TransactionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final muted = scheme.onSurface.withValues(alpha: 0.62);
     final typeColor = _getTypeColor(transaction.type);
     final isPositive = transaction.quantity > 0;
 
     return Container(
-      color: Colors.white,
+      color: scheme.surface,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -370,7 +362,7 @@ class _TransactionItem extends StatelessWidget {
                     Expanded(
                       child: Text(
                         transaction.product?.name ?? 'Unknown Product',
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 16, color: AppColors.lightText),
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 16, color: scheme.onSurface),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -397,12 +389,12 @@ class _TransactionItem extends StatelessWidget {
                     Container(
                       width: 4,
                       height: 4,
-                      decoration: const BoxDecoration(color: AppColors.lightOutline, shape: BoxShape.circle),
+                      decoration: BoxDecoration(color: scheme.outline.withValues(alpha: 0.5), shape: BoxShape.circle),
                     ),
                     const SizedBox(width: 6),
                     Text(
                       AppFormatters.formatDate(transaction.createdAt),
-                      style: const TextStyle(color: AppColors.lightMutedText, fontSize: 12),
+                      style: TextStyle(color: muted, fontSize: 12),
                     ),
                   ],
                 ),
@@ -410,7 +402,7 @@ class _TransactionItem extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     transaction.reason!,
-                    style: const TextStyle(color: AppColors.lightMutedText, fontSize: 12, fontStyle: FontStyle.italic),
+                    style: TextStyle(color: muted, fontSize: 12, fontStyle: FontStyle.italic),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -478,14 +470,7 @@ class _TransactionsFilterSheetState extends State<_TransactionsFilterSheet> {
           : null,
       builder: (context, child) {
         return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.brandPurple,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: AppColors.lightText,
-            ),
-          ),
+          data: Theme.of(context),
           child: child!,
         );
       },
@@ -501,6 +486,8 @@ class _TransactionsFilterSheetState extends State<_TransactionsFilterSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final muted = scheme.onSurface.withValues(alpha: 0.62);
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.8),
       child: Column(
@@ -558,12 +545,12 @@ class _TransactionsFilterSheetState extends State<_TransactionsFilterSheet> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.lightOutline),
+                        border: Border.all(color: scheme.outline.withValues(alpha: 0.45)),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         children: [
-                          const Icon(AppIcons.calendar, size: 20, color: AppColors.lightMutedText),
+                          Icon(AppIcons.calendar, size: 20, color: muted),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
@@ -571,7 +558,7 @@ class _TransactionsFilterSheetState extends State<_TransactionsFilterSheet> {
                                   ? '${AppFormatters.formatDate(_startDateFilter!)} - ${AppFormatters.formatDate(_endDateFilter!)}'
                                   : 'Select date range',
                               style: TextStyle(
-                                color: _startDateFilter != null ? AppColors.lightText : AppColors.lightMutedText,
+                                color: _startDateFilter != null ? scheme.onSurface : muted,
                                 fontSize: 16,
                               ),
                             ),
@@ -582,7 +569,7 @@ class _TransactionsFilterSheetState extends State<_TransactionsFilterSheet> {
                                 _startDateFilter = null;
                                 _endDateFilter = null;
                               }),
-                              child: const Icon(AppIcons.close, size: 16, color: AppColors.lightMutedText),
+                              child: Icon(AppIcons.close, size: 16, color: muted),
                             ),
                         ],
                       ),
@@ -606,10 +593,10 @@ class _TransactionsFilterSheetState extends State<_TransactionsFilterSheet> {
                   },
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    side: const BorderSide(color: AppColors.lightOutline),
+                    side: BorderSide(color: scheme.outline.withValues(alpha: 0.5)),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('Clear', style: TextStyle(color: AppColors.lightText)),
+                  child: Text('Clear', style: TextStyle(color: scheme.onSurface)),
                 ),
               ),
               const SizedBox(width: 12),
@@ -671,6 +658,7 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
@@ -679,12 +667,12 @@ class _FilterChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected ? AppColors.brandPurple : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: selected ? AppColors.brandPurple : AppColors.lightOutline),
+          border: Border.all(color: selected ? AppColors.brandPurple : scheme.outline.withValues(alpha: 0.45)),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? Colors.white : AppColors.lightText,
+            color: selected ? Colors.white : scheme.onSurface,
             fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
           ),
         ),

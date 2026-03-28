@@ -204,6 +204,7 @@ model products {
   name                   String
   brand                  String?
   size                   String?
+  measureUnit            ProductMeasureUnit
   price                  Decimal                  @db.Decimal(10, 2)
   sku                    String?
   barcode                String?
@@ -468,4 +469,12 @@ enum PaymentStatus {
   PAID
   CREDIT
   PARTIAL
+}
+
+enum ProductMeasureUnit {
+  PCS
+  ML
+  L
+  G
+  KG
 }

@@ -133,50 +133,56 @@ class _AdjustStockScreenState extends ConsumerState<AdjustStockScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Product Selector using Picker
-              InkWell(
-                onTap: _pickProduct,
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: AppColors.lightOutline),
+              Builder(
+                builder: (context) {
+                  final scheme = Theme.of(context).colorScheme;
+                  final muted = scheme.onSurface.withValues(alpha: 0.62);
+                  return InkWell(
+                    onTap: _pickProduct,
                     borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: AppColors.brandPurple.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(AppIcons.products, color: AppColors.brandPurple, size: 20),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: scheme.surface,
+                        border: Border.all(color: scheme.outline.withValues(alpha: 0.6)),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Product',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.lightMutedText),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: AppColors.brandPurple.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _selectedProduct?.name ?? 'Select Product',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                color: _selectedProduct == null ? AppColors.lightMutedText : AppColors.lightText,
-                                fontWeight: _selectedProduct == null ? FontWeight.normal : FontWeight.w600,
-                              ),
+                            child: const Icon(AppIcons.products, color: AppColors.brandPurple, size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Product',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: muted),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _selectedProduct?.name ?? 'Select Product',
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    color: _selectedProduct == null ? muted : scheme.onSurface,
+                                    fontWeight: _selectedProduct == null ? FontWeight.normal : FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          ),
+                          Icon(AppIcons.forward, color: muted),
+                        ],
                       ),
-                      const Icon(AppIcons.forward, color: AppColors.lightMutedText),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 16),
 

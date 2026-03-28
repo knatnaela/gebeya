@@ -5,16 +5,27 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Checkbox as UICheckbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
+export const PRODUCT_MEASURE_UNITS = ['PCS', 'ML', 'L', 'G', 'KG'] as const;
+export type ProductMeasureUnit = (typeof PRODUCT_MEASURE_UNITS)[number];
+
 export const productSchema = z.object({
   name: z.string().min(1, 'Product name is required'),
   brand: z.string().optional(),
   size: z.string().optional(),
+  measureUnit: z.enum(['PCS', 'ML', 'L', 'G', 'KG']),
   price: z.number().positive('Selling price must be positive'),
   costPrice: z.number().positive('Cost price must be positive'),
   sku: z.string().optional(),
@@ -56,6 +67,7 @@ export function ProductFormDialog({
       name: '',
       brand: '',
       size: '',
+      measureUnit: 'ML' as ProductMeasureUnit,
       price: 0,
       costPrice: 0,
       sku: '',
@@ -74,6 +86,7 @@ export function ProductFormDialog({
         name: '',
         brand: '',
         size: '',
+        measureUnit: 'ML',
         price: 0,
         costPrice: 0,
         sku: '',
@@ -124,7 +137,29 @@ export function ProductFormDialog({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="size">Size</Label>
-              <Input id="size" placeholder="e.g., 50ml" {...register('size')} />
+              <Input id="size" placeholder="e.g. 100 (shown with unit)" {...register('size')} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="measureUnit">Measure unit (for size label) *</Label>
+              <Controller
+                name="measureUnit"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger id="measureUnit">
+                      <SelectValue placeholder="Select unit" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PCS">Pieces (pcs)</SelectItem>
+                      <SelectItem value="ML">Milliliters (ml)</SelectItem>
+                      <SelectItem value="L">Liters (L)</SelectItem>
+                      <SelectItem value="G">Grams (g)</SelectItem>
+                      <SelectItem value="KG">Kilograms (kg)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              <p className="text-xs text-muted-foreground">Stock is still counted in bottles/units.</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="price">Selling Price *</Label>

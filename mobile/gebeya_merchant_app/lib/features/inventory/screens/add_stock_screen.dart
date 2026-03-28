@@ -99,8 +99,6 @@ class _AddStockScreenState extends ConsumerState<AddStockScreen> {
     final selected = await showDialog<Location>(
       context: context,
       builder: (context) => Dialog(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -151,14 +149,7 @@ class _AddStockScreenState extends ConsumerState<AddStockScreen> {
       lastDate: DateTime.now().add(const Duration(days: 365 * 10)),
       builder: (context, child) {
         return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.brandPurple,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: AppColors.lightText,
-            ),
-          ),
+          data: Theme.of(context),
           child: child!,
         );
       },
@@ -227,7 +218,7 @@ class _AddStockScreenState extends ConsumerState<AddStockScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Failed to add stock: $e'), backgroundColor: AppColors.lightError));
+        ).showSnackBar(SnackBar(content: Text('Failed to add stock: $e'), backgroundColor: Theme.of(context).colorScheme.error));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -348,58 +339,64 @@ class _AddStockScreenState extends ConsumerState<AddStockScreen> {
                     const SizedBox(height: 12),
 
                     // Payment Status Segment
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: AppColors.lightBackground,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.lightOutline),
-                      ),
-                      child: Row(
-                        children: PaymentStatus.values.map((status) {
-                          final isSelected = _paymentStatus == status;
-                          return Expanded(
-                            child: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _paymentStatus = status;
-                                  if (status == PaymentStatus.paid) {
-                                    _paidAmountController.clear();
-                                    _paymentDueDate = null;
-                                  }
-                                });
-                              },
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                padding: const EdgeInsets.symmetric(vertical: 10),
-                                decoration: BoxDecoration(
-                                  color: isSelected ? Colors.white : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(8),
-                                  boxShadow: isSelected
-                                      ? [
-                                          BoxShadow(
-                                            color: Colors.black.withValues(alpha: 0.05),
-                                            blurRadius: 4,
-                                            offset: const Offset(0, 2),
-                                          ),
-                                        ]
-                                      : null,
-                                ),
-                                alignment: Alignment.center,
-                                child: Text(
-                                  status.name.toUpperCase(),
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 12,
-                                    color: isSelected ? AppColors.brandPurple : AppColors.lightMutedText,
+                    Builder(
+                      builder: (context) {
+                        final scheme = Theme.of(context).colorScheme;
+                        final muted = scheme.onSurface.withValues(alpha: 0.58);
+                        return Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: scheme.surfaceContainerHighest.withValues(alpha: 0.75),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: scheme.outline.withValues(alpha: 0.45)),
+                          ),
+                          child: Row(
+                            children: PaymentStatus.values.map((status) {
+                              final isSelected = _paymentStatus == status;
+                              return Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _paymentStatus = status;
+                                      if (status == PaymentStatus.paid) {
+                                        _paidAmountController.clear();
+                                        _paymentDueDate = null;
+                                      }
+                                    });
+                                  },
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: isSelected ? scheme.surface : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(8),
+                                      boxShadow: isSelected
+                                          ? [
+                                              BoxShadow(
+                                                color: scheme.shadow.withValues(alpha: 0.12),
+                                                blurRadius: 4,
+                                                offset: const Offset(0, 2),
+                                              ),
+                                            ]
+                                          : null,
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      status.name.toUpperCase(),
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 12,
+                                        color: isSelected ? AppColors.brandPurple : muted,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
+                              );
+                            }).toList(),
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 16),
 
@@ -477,7 +474,11 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.lightText),
+      style: GoogleFonts.outfit(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: Theme.of(context).colorScheme.onSurface,
+      ),
     );
   }
 }
@@ -501,14 +502,16 @@ class _SelectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final muted = scheme.onSurface.withValues(alpha: 0.62);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: hasError ? AppColors.lightError : AppColors.lightOutline),
+          color: scheme.surface,
+          border: Border.all(color: hasError ? scheme.error : scheme.outline.withValues(alpha: 0.55)),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -516,7 +519,7 @@ class _SelectionCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AppColors.brandPurple.withValues(alpha: 0.1),
+                color: AppColors.brandPurple.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(icon, color: AppColors.brandPurple, size: 20),
@@ -526,20 +529,20 @@ class _SelectionCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontSize: 12, color: AppColors.lightMutedText)),
+                  Text(title, style: TextStyle(fontSize: 12, color: muted)),
                   const SizedBox(height: 4),
                   Text(
                     value ?? placeholder ?? '',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: value != null ? FontWeight.w600 : FontWeight.normal,
-                      color: value != null ? AppColors.lightText : AppColors.lightMutedText,
+                      color: value != null ? scheme.onSurface : muted,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(AppIcons.forward, size: 16, color: AppColors.lightMutedText),
+            Icon(AppIcons.forward, size: 16, color: muted),
           ],
         ),
       ),
@@ -564,14 +567,16 @@ class _DateSelectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final muted = scheme.onSurface.withValues(alpha: 0.62);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: isError ? AppColors.lightError : AppColors.lightOutline),
+          color: scheme.surface,
+          border: Border.all(color: isError ? scheme.error : scheme.outline.withValues(alpha: 0.55)),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -579,9 +584,9 @@ class _DateSelectionCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(AppIcons.calendar, size: 14, color: AppColors.lightMutedText),
+                Icon(AppIcons.calendar, size: 14, color: muted),
                 const SizedBox(width: 6),
-                Text(label, style: const TextStyle(fontSize: 12, color: AppColors.lightMutedText)),
+                Text(label, style: TextStyle(fontSize: 12, color: muted)),
               ],
             ),
             const SizedBox(height: 8),
@@ -590,7 +595,7 @@ class _DateSelectionCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: date != null ? FontWeight.w600 : FontWeight.normal,
-                color: date != null ? AppColors.lightText : AppColors.lightMutedText,
+                color: date != null ? scheme.onSurface : muted,
               ),
             ),
           ],
@@ -623,12 +628,14 @@ class _ModernTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final muted = scheme.onSurface.withValues(alpha: 0.62);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 12, color: AppColors.lightMutedText, fontWeight: FontWeight.w500),
+          style: TextStyle(fontSize: 12, color: muted, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 6),
         TextFormField(
@@ -640,18 +647,18 @@ class _ModernTextField extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.w500),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: AppColors.lightMutedText, fontWeight: FontWeight.normal),
-            prefixIcon: prefixIcon != null ? Icon(prefixIcon, size: 18, color: AppColors.lightMutedText) : null,
+            hintStyle: TextStyle(color: muted, fontWeight: FontWeight.normal),
+            prefixIcon: prefixIcon != null ? Icon(prefixIcon, size: 18, color: muted) : null,
             filled: true,
-            fillColor: Colors.white,
+            fillColor: scheme.surfaceContainerHighest,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.lightOutline),
+              borderSide: BorderSide(color: scheme.outline.withValues(alpha: 0.45)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.lightOutline),
+              borderSide: BorderSide(color: scheme.outline.withValues(alpha: 0.45)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -659,7 +666,7 @@ class _ModernTextField extends StatelessWidget {
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.lightError),
+              borderSide: BorderSide(color: scheme.error),
             ),
           ),
         ),

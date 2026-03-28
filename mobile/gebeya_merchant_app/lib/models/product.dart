@@ -1,5 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'product_measure_unit.dart';
+
 part 'product.freezed.dart';
 part 'product.g.dart';
 
@@ -10,6 +12,7 @@ abstract class Product with _$Product {
     required String name,
     String? brand,
     String? size,
+    required ProductMeasureUnit measureUnit,
     required num price,
     required num costPrice,
     String? sku,

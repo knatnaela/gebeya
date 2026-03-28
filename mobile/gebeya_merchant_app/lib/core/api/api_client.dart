@@ -6,10 +6,7 @@ import 'dio_interceptors.dart';
 final apiBaseUrlProvider = Provider<String>((ref) {
   // Default: local API (Android emulator → host machine; use 127.0.0.1 on iOS simulator / desktop if needed).
   // Production: flutter build apk --dart-define=API_BASE_URL=https://gebeya-kappa.vercel.app/api
-  return const String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:5000/api',
-  );
+  return const String.fromEnvironment('API_BASE_URL', defaultValue: 'http://10.0.2.2:5000/api');
 });
 
 final dioProvider = Provider<Dio>((ref) {

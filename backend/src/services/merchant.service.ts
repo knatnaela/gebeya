@@ -419,8 +419,10 @@ export class MerchantService {
       status: MerchantStatus.PENDING_APPROVAL,
     };
 
+    // Self-service registration leaves companyId null until approval; company-scoped
+    // owners must still see those rows (approval assigns companyId from the approver).
     if (companyId) {
-      where.companyId = companyId;
+      where.OR = [{ companyId }, { companyId: null }];
     }
 
     const merchants = await prisma.merchants.findMany({

@@ -18,7 +18,7 @@ class AuthShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: const BoxDecoration(gradient: AppColors.authBackgroundGradient),
+      decoration: BoxDecoration(gradient: AppColors.authBackgroundFor(Theme.of(context).brightness)),
       child: SafeArea(
         child: Center(
           child: SingleChildScrollView(

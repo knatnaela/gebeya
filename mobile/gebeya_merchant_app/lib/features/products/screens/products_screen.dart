@@ -17,6 +17,7 @@ import '../../../core/ui/widgets/app_scaffold.dart';
 import '../../../core/ui/widgets/app_text_field.dart';
 import '../../../core/ui/widgets/primary_button.dart';
 import '../../../models/product.dart';
+import '../../../models/product_measure_unit.dart';
 import '../products_controller.dart';
 import '../products_state.dart';
 import 'product_create_edit_screen.dart';
@@ -256,6 +257,7 @@ class _BulkActionsBar extends ConsumerWidget {
         'Name',
         'Brand',
         'Size',
+        'Measure unit',
         'Price',
         'Cost Price',
         'SKU',
@@ -273,6 +275,7 @@ class _BulkActionsBar extends ConsumerWidget {
         product.name,
         product.brand ?? '',
         product.size ?? '',
+        product.measureUnit.name,
         product.price.toStringAsFixed(2),
         product.costPrice.toStringAsFixed(2),
         product.sku ?? '',
@@ -388,6 +391,7 @@ class _ProductListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final stockStatus = _getStockStatus(stock, product.lowStockThreshold);
+    final sizeLabel = formatProductSizeLabel(product.size, product.measureUnit);
 
     return InkWell(
       onTap: onTap,
@@ -430,10 +434,14 @@ class _ProductListItem extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (product.brand != null || product.size != null) ...[
+                  if (product.brand != null || sizeLabel.isNotEmpty) ...[
                     const SizedBox(height: 2),
                     Text(
-                      [product.brand, product.size].whereType<String>().join(' • '),
+                      [
+                        if (product.brand != null && product.brand!.trim().isNotEmpty)
+                          product.brand!.trim(),
+                        if (sizeLabel.isNotEmpty) sizeLabel,
+                      ].join(' • '),
                       style: Theme.of(context).textTheme.bodySmall,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

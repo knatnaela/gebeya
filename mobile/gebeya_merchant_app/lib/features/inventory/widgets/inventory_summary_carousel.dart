@@ -37,7 +37,7 @@ class InventorySummaryCarousel extends StatelessWidget {
             title: 'Out of Stock',
             value: summary.outOfStockCount.toString(),
             icon: AppIcons.inventory,
-            color: AppColors.brandPurple, // Using brand purple as a distinct color for out of stock/inventory
+            color: AppColors.brandPurple,
           ),
           const SizedBox(width: 12),
           _SummaryCard(
@@ -69,13 +69,15 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final muted = scheme.onSurface.withValues(alpha: 0.65);
     return Container(
       width: isPrimary ? 160 : 130,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isPrimary ? color : AppColors.lightBackground, // Keep light background for secondary cards
+        color: isPrimary ? color : scheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: isPrimary ? null : Border.all(color: AppColors.lightOutline),
+        border: isPrimary ? null : Border.all(color: scheme.outline.withValues(alpha: 0.55)),
         boxShadow: isPrimary
             ? [BoxShadow(color: color.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))]
             : null,
@@ -93,7 +95,7 @@ class _SummaryCard extends StatelessWidget {
                   title,
                   style: TextStyle(
                     fontSize: 12,
-                    color: isPrimary ? Colors.white.withValues(alpha: 0.9) : AppColors.lightMutedText,
+                    color: isPrimary ? Colors.white.withValues(alpha: 0.9) : muted,
                     fontWeight: FontWeight.w500,
                   ),
                   maxLines: 1,
@@ -108,7 +110,7 @@ class _SummaryCard extends StatelessWidget {
             style: TextStyle(
               fontSize: isPrimary ? 18 : 16,
               fontWeight: FontWeight.bold,
-              color: isPrimary ? Colors.white : AppColors.lightText,
+              color: isPrimary ? Colors.white : scheme.onSurface,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

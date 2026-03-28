@@ -139,6 +139,7 @@ class _ProductPickerScreenState extends ConsumerState<ProductPickerScreen> {
   @override
   Widget build(BuildContext context) {
     final currencyCode = ref.watch(merchantCurrencyProvider);
+    final scheme = Theme.of(context).colorScheme;
 
     return AppScaffold(
       title: 'Select product',
@@ -164,14 +165,14 @@ class _ProductPickerScreenState extends ConsumerState<ProductPickerScreen> {
                       )
                     : null,
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: scheme.surfaceContainerHighest,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: AppColors.lightOutline),
+                  borderSide: BorderSide(color: scheme.outline.withValues(alpha: 0.5)),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: AppColors.lightOutline),
+                  borderSide: BorderSide(color: scheme.outline.withValues(alpha: 0.5)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -257,6 +258,8 @@ class _ProductPickerItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final muted = scheme.onSurface.withValues(alpha: 0.62);
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -267,7 +270,7 @@ class _ProductPickerItem extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: AppColors.brandPurple.withValues(alpha: 0.1),
+                color: AppColors.brandPurple.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Center(child: Icon(AppIcons.products, color: AppColors.brandPurple, size: 24)),
@@ -279,7 +282,11 @@ class _ProductPickerItem extends StatelessWidget {
                 children: [
                   Text(
                     product.name,
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16, color: AppColors.lightText),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                      color: scheme.onSurface,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -295,7 +302,7 @@ class _ProductPickerItem extends StatelessWidget {
                         if (product.brand != null) product.brand,
                         if (product.sku != null) 'SKU: ${product.sku}',
                       ].join(' • '),
-                      style: const TextStyle(fontSize: 13, color: AppColors.lightMutedText),
+                      style: TextStyle(fontSize: 13, color: muted),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -303,7 +310,7 @@ class _ProductPickerItem extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(AppIcons.forward, size: 16, color: AppColors.lightMutedText),
+            Icon(AppIcons.forward, size: 16, color: muted),
           ],
         ),
       ),

@@ -119,8 +119,6 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
     final selected = await showDialog<Location>(
       context: context,
       builder: (context) => Dialog(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -513,14 +511,16 @@ class _SaleSelectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final muted = scheme.onSurface.withValues(alpha: 0.62);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: AppColors.lightOutline),
+          color: scheme.surface,
+          border: Border.all(color: scheme.outline.withValues(alpha: 0.6)),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -528,7 +528,7 @@ class _SaleSelectionCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AppColors.brandPurple.withValues(alpha: 0.1),
+                color: AppColors.brandPurple.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(icon, color: AppColors.brandPurple, size: 20),
@@ -538,7 +538,7 @@ class _SaleSelectionCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontSize: 12, color: AppColors.lightMutedText)),
+                  Text(title, style: TextStyle(fontSize: 12, color: muted)),
                   const SizedBox(height: 4),
                   Text(
                     value ?? placeholder ?? '',
@@ -547,13 +547,13 @@ class _SaleSelectionCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: value != null ? FontWeight.w600 : FontWeight.normal,
-                      color: value != null ? AppColors.lightText : AppColors.lightMutedText,
+                      color: value != null ? scheme.onSurface : muted,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(AppIcons.forward, size: 16, color: AppColors.lightMutedText),
+            Icon(AppIcons.forward, size: 16, color: muted),
           ],
         ),
       ),

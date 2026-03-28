@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import { ProductMeasureUnit } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { productService, ProductFilters } from '../services/product.service';
 import { z } from 'zod';
@@ -8,6 +9,7 @@ const createProductSchema = z.object({
   name: z.string().min(1, 'Product name is required'),
   brand: z.string().optional(),
   size: z.string().optional(),
+  measureUnit: z.nativeEnum(ProductMeasureUnit),
   price: z.number().positive('Selling price must be positive'),
   costPrice: z.number().positive('Cost price must be positive'),
   sku: z.string().optional(),

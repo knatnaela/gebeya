@@ -11,6 +11,7 @@ class TransactionHistoryList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -19,9 +20,9 @@ class TransactionHistoryList extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Recent Activity',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.lightText),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: scheme.onSurface),
               ),
               TextButton(onPressed: onViewAll, child: const Text('View All')),
             ],
@@ -29,7 +30,7 @@ class TransactionHistoryList extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         if (transactions.isEmpty)
-          _EmptyState()
+          const _EmptyState()
         else
           ListView.separated(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -47,22 +48,26 @@ class TransactionHistoryList extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final muted = scheme.onSurface.withValues(alpha: 0.62);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: AppColors.lightBackground,
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.lightOutline),
+        border: Border.all(color: scheme.outline.withValues(alpha: 0.45)),
       ),
       child: Center(
         child: Column(
           children: [
-            Icon(AppIcons.time, size: 48, color: AppColors.lightMutedText.withValues(alpha: 0.3)),
+            Icon(AppIcons.time, size: 48, color: muted.withValues(alpha: 0.45)),
             const SizedBox(height: 16),
-            Text('No recent activity', style: TextStyle(color: AppColors.lightMutedText, fontSize: 14)),
+            Text('No recent activity', style: TextStyle(color: muted, fontSize: 14)),
           ],
         ),
       ),
@@ -124,16 +129,15 @@ class _TransactionItem extends StatelessWidget {
       case InventoryTransactionType.return_:
         return AppIcons.back;
       case InventoryTransactionType.transferIn:
-        return AppIcons.forward; // Assuming arrow right implies "in" contextually or just movement
+        return AppIcons.forward;
       case InventoryTransactionType.transferOut:
-        return AppIcons.back; // Or chevron left
+        return AppIcons.back;
       case InventoryTransactionType.stockIn:
         return AppIcons.check;
     }
   }
 
   String _formatDate(DateTime date) {
-    // Simple formatter, can be replaced with intl later if needed relative time
     final now = DateTime.now();
     final diff = now.difference(date);
     if (diff.inMinutes < 60) {
@@ -146,22 +150,30 @@ class _TransactionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final muted = scheme.onSurface.withValues(alpha: 0.62);
     final typeColor = _getTypeColor(transaction.type);
     final isPositive = transaction.quantity > 0;
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: scheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.lightOutline.withValues(alpha: 0.5)),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 4, offset: const Offset(0, 2))],
+        border: Border.all(color: scheme.outline.withValues(alpha: 0.45)),
+        boxShadow: [
+          BoxShadow(
+            color: scheme.shadow.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.35 : 0.06),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: typeColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(color: typeColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
             child: Icon(_getTypeIcon(transaction.type), size: 20, color: typeColor),
           ),
           const SizedBox(width: 12),
@@ -171,14 +183,14 @@ class _TransactionItem extends StatelessWidget {
               children: [
                 Text(
                   transaction.product?.name ?? 'Unknown Product',
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppColors.lightText),
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: scheme.onSurface),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 Text(
                   '${_getTypeLabel(transaction.type)} • ${_formatDate(transaction.createdAt)}',
-                  style: const TextStyle(fontSize: 12, color: AppColors.lightMutedText),
+                  style: TextStyle(fontSize: 12, color: muted),
                 ),
               ],
             ),
@@ -199,7 +211,7 @@ class _TransactionItem extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 2),
                   child: Text(
                     transaction.location!.name,
-                    style: const TextStyle(fontSize: 10, color: AppColors.lightMutedText),
+                    style: TextStyle(fontSize: 10, color: muted),
                   ),
                 ),
             ],

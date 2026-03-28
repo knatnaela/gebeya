@@ -3,7 +3,7 @@ import { getTenantId, ensureTenantAccess } from '../utils/tenant';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { AppError } from '../middleware/error.middleware';
 import { auditService } from './audit.service';
-import { AuditAction } from '@prisma/client';
+import { AuditAction, ProductMeasureUnit } from '@prisma/client';
 import { inventoryStockService } from './inventory-stock.service';
 import { locationService } from './location.service';
 
@@ -11,6 +11,7 @@ export interface CreateProductData {
   name: string;
   brand?: string;
   size?: string;
+  measureUnit: ProductMeasureUnit;
   price: number;  // Selling price
   costPrice: number;  // Purchase/bought price
   sku?: string;
@@ -33,6 +34,7 @@ const PRODUCT_LIST_SELECT = {
   name: true,
   brand: true,
   size: true,
+  measureUnit: true,
   price: true,
   sku: true,
   barcode: true,
@@ -110,6 +112,7 @@ export class ProductService {
         name: data.name,
         brand: data.brand,
         size: data.size,
+        measureUnit: data.measureUnit,
         price: data.price,
         costPrice: data.costPrice,
         sku: data.sku,

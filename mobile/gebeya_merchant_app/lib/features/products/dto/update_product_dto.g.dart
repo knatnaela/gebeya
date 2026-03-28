@@ -11,6 +11,10 @@ UpdateProductDto _$UpdateProductDtoFromJson(Map<String, dynamic> json) =>
       name: json['name'] as String?,
       brand: json['brand'] as String?,
       size: json['size'] as String?,
+      measureUnit: $enumDecodeNullable(
+        _$ProductMeasureUnitEnumMap,
+        json['measureUnit'],
+      ),
       price: json['price'] as num?,
       costPrice: json['costPrice'] as num?,
       sku: json['sku'] as String?,
@@ -23,15 +27,24 @@ UpdateProductDto _$UpdateProductDtoFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$UpdateProductDtoToJson(UpdateProductDto instance) =>
     <String, dynamic>{
-      'name': instance.name,
-      'brand': instance.brand,
-      'size': instance.size,
-      'price': instance.price,
-      'costPrice': instance.costPrice,
-      'sku': instance.sku,
-      'barcode': instance.barcode,
-      'description': instance.description,
-      'lowStockThreshold': instance.lowStockThreshold,
-      'imageUrl': instance.imageUrl,
-      'isActive': instance.isActive,
+      'name': ?instance.name,
+      'brand': ?instance.brand,
+      'size': ?instance.size,
+      'measureUnit': ?_$ProductMeasureUnitEnumMap[instance.measureUnit],
+      'price': ?instance.price,
+      'costPrice': ?instance.costPrice,
+      'sku': ?instance.sku,
+      'barcode': ?instance.barcode,
+      'description': ?instance.description,
+      'lowStockThreshold': ?instance.lowStockThreshold,
+      'imageUrl': ?instance.imageUrl,
+      'isActive': ?instance.isActive,
     };
+
+const _$ProductMeasureUnitEnumMap = {
+  ProductMeasureUnit.PCS: 'PCS',
+  ProductMeasureUnit.ML: 'ML',
+  ProductMeasureUnit.L: 'L',
+  ProductMeasureUnit.G: 'G',
+  ProductMeasureUnit.KG: 'KG',
+};

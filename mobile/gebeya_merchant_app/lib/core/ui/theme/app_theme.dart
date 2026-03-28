@@ -162,6 +162,25 @@ abstract final class AppTheme {
         }),
       ),
       dividerTheme: DividerThemeData(color: scheme.outline.withValues(alpha: 0.5), space: 1, thickness: 1),
+      dialogTheme: DialogThemeData(
+        backgroundColor: scheme.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(radius))),
+        titleTextStyle: themedText.titleLarge?.copyWith(color: scheme.onSurface),
+        contentTextStyle: themedText.bodyMedium?.copyWith(color: scheme.onSurface),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: scheme.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(radius)),
+        ),
+      ),
+      listTileTheme: ListTileThemeData(
+        iconColor: scheme.onSurface.withValues(alpha: 0.7),
+        textColor: scheme.onSurface,
+      ),
+      iconTheme: IconThemeData(color: scheme.onSurface.withValues(alpha: 0.85)),
     );
   }
 }

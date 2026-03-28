@@ -1,5 +1,7 @@
 import 'package:json_annotation/json_annotation.dart';
 
+import '../../../models/product_measure_unit.dart';
+
 part 'create_product_dto.g.dart';
 
 @JsonSerializable()
@@ -8,6 +10,7 @@ class CreateProductDto {
     required this.name,
     this.brand,
     this.size,
+    required this.measureUnit,
     required this.price,
     required this.costPrice,
     this.sku,
@@ -20,6 +23,7 @@ class CreateProductDto {
   final String name;
   final String? brand;
   final String? size;
+  final ProductMeasureUnit measureUnit;
   final num price;
   final num costPrice;
   final String? sku;

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/ui/widgets/app_scaffold.dart';
 import '../../../core/ui/widgets/app_text_field.dart';
 import '../../../core/ui/widgets/primary_button.dart';
+import '../../../models/product_measure_unit.dart';
 import '../products_controller.dart';
 import '../products_repository.dart';
 import '../dto/create_product_dto.dart';
@@ -39,6 +40,8 @@ class _ProductCreateEditScreenState
   bool _isActive = true;
   bool _isLoading = false;
   bool _isEditMode = false;
+  /// UI default for new products only (not a server default).
+  ProductMeasureUnit _measureUnit = ProductMeasureUnit.ML;
 
   @override
   void initState() {
@@ -84,6 +87,7 @@ class _ProductCreateEditScreenState
       _lowStockThresholdController.text = product.lowStockThreshold.toString();
       _imageUrlController.text = product.imageUrl ?? '';
       _isActive = product.isActive;
+      _measureUnit = product.measureUnit;
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -113,6 +117,7 @@ class _ProductCreateEditScreenState
                 size: _sizeController.text.trim().isEmpty
                     ? null
                     : _sizeController.text.trim(),
+                measureUnit: _measureUnit,
                 price: num.tryParse(_priceController.text),
                 costPrice: num.tryParse(_costPriceController.text),
                 sku: _skuController.text.trim().isEmpty
@@ -141,6 +146,7 @@ class _ProductCreateEditScreenState
                 size: _sizeController.text.trim().isEmpty
                     ? null
                     : _sizeController.text.trim(),
+                measureUnit: _measureUnit,
                 price: num.parse(_priceController.text),
                 costPrice: num.parse(_costPriceController.text),
                 sku: _skuController.text.trim().isEmpty
@@ -214,7 +220,27 @@ class _ProductCreateEditScreenState
               AppTextField(
                 controller: _sizeController,
                 label: 'Size (optional)',
+                hintText: 'e.g. 100 — shown with measure unit',
                 textInputAction: TextInputAction.next,
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<ProductMeasureUnit>(
+                value: _measureUnit,
+                decoration: const InputDecoration(
+                  labelText: 'Measure unit (for size label)',
+                  helperText: 'Stock is still counted in bottles/units',
+                ),
+                items: ProductMeasureUnit.values
+                    .map(
+                      (u) => DropdownMenuItem(
+                        value: u,
+                        child: Text(u.formLabel),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (v) {
+                  if (v != null) setState(() => _measureUnit = v);
+                },
               ),
               const SizedBox(height: 12),
               Row(

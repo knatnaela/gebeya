@@ -41,14 +41,16 @@ class _StockEntriesScreenState extends ConsumerState<StockEntriesScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(stockEntriesControllerProvider);
+    final scheme = Theme.of(context).colorScheme;
+    final bg = Theme.of(context).scaffoldBackgroundColor;
 
     return Scaffold(
-      backgroundColor: AppColors.lightBackground,
+      backgroundColor: bg,
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
             SliverAppBar(
-              backgroundColor: AppColors.lightBackground,
+              backgroundColor: bg,
               scrolledUnderElevation: 0,
               expandedHeight: 120, // Height for large title
               floating: false,
@@ -58,9 +60,9 @@ class _StockEntriesScreenState extends ConsumerState<StockEntriesScreen> {
                 titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
                 title: Text(
                   'Stock Entries',
-                  style: TextStyle(color: AppColors.lightText, fontWeight: FontWeight.bold, fontSize: 24),
+                  style: TextStyle(color: scheme.onSurface, fontWeight: FontWeight.bold, fontSize: 24),
                 ),
-                background: Container(color: AppColors.lightBackground),
+                background: Container(color: bg),
               ),
               actions: [
                 IconButton(
@@ -76,7 +78,7 @@ class _StockEntriesScreenState extends ConsumerState<StockEntriesScreen> {
               delegate: _SliverSearchDelegate(
                 child: Container(
                   height: 60,
-                  color: AppColors.lightBackground,
+                  color: bg,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Row(
                     children: [
@@ -88,14 +90,14 @@ class _StockEntriesScreenState extends ConsumerState<StockEntriesScreen> {
                             prefixIcon: const Icon(AppIcons.search, size: 20),
                             contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                             filled: true,
-                            fillColor: Colors.white,
+                            fillColor: scheme.surfaceContainerHighest,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: AppColors.lightOutline),
+                              borderSide: BorderSide(color: scheme.outline.withValues(alpha: 0.45)),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: AppColors.lightOutline),
+                              borderSide: BorderSide(color: scheme.outline.withValues(alpha: 0.45)),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -111,11 +113,11 @@ class _StockEntriesScreenState extends ConsumerState<StockEntriesScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: scheme.surface,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.lightOutline),
+                            border: Border.all(color: scheme.outline.withValues(alpha: 0.45)),
                           ),
-                          child: const Icon(AppIcons.filter, size: 20, color: AppColors.lightText),
+                          child: Icon(AppIcons.filter, size: 20, color: scheme.onSurface),
                         ),
                       ),
                     ],
@@ -287,7 +289,11 @@ class _FilterSheet extends ConsumerWidget {
 
           Text(
             'Product',
-            style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.lightMutedText),
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.62),
+            ),
           ),
           const SizedBox(height: 12),
           productsAsync.when(
@@ -317,7 +323,11 @@ class _FilterSheet extends ConsumerWidget {
 
           Text(
             'Location',
-            style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.lightMutedText),
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.62),
+            ),
           ),
           const SizedBox(height: 12),
           locationsAsync.when(
@@ -352,12 +362,12 @@ class _FilterSheet extends ConsumerWidget {
                   onPressed: onClear,
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    side: const BorderSide(color: AppColors.lightOutline),
+                    side: BorderSide(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5)),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Reset',
-                    style: TextStyle(color: AppColors.lightText, fontWeight: FontWeight.w600),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -392,21 +402,22 @@ class _ChoiceChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       child: FilterChip(
         label: Text(label),
         selected: selected,
         onSelected: onSelected,
-        backgroundColor: Colors.white,
+        backgroundColor: scheme.surface,
         selectedColor: AppColors.brandPurple,
         labelStyle: TextStyle(
-          color: selected ? Colors.white : AppColors.lightText,
+          color: selected ? Colors.white : scheme.onSurface,
           fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: selected ? Colors.transparent : AppColors.lightOutline),
+          side: BorderSide(color: selected ? Colors.transparent : scheme.outline.withValues(alpha: 0.45)),
         ),
         showCheckmark: false,
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
