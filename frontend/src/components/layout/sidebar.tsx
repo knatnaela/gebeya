@@ -81,7 +81,12 @@ const companyNavItems: NavItem[] = [
   { name: 'Settings', href: '/company/settings', icon: Settings, requiredFeature: 'settings.view' },
 ];
 
-export function Sidebar() {
+type SidebarProps = {
+  /** Called when the user follows an in-app nav link (e.g. close mobile drawer). */
+  onNavigate?: () => void;
+};
+
+export function Sidebar({ onNavigate }: SidebarProps) {
   const pathname = usePathname();
   const { user, logout, isPlatformOwner } = useAuth();
   const permissionsContext = useContext(PermissionsContext);
@@ -204,8 +209,8 @@ export function Sidebar() {
   };
 
   return (
-    <div className="flex h-full w-64 flex-col border-r bg-gradient-to-b from-white to-slate-50 shadow-lg">
-      <div className="flex h-16 items-center border-b px-6 bg-gradient-to-r from-purple-600 to-blue-600">
+    <div className="flex h-full min-h-0 w-64 max-w-[min(16rem,85vw)] flex-col border-r bg-gradient-to-b from-white to-slate-50 shadow-lg pt-[env(safe-area-inset-top,0px)]">
+      <div className="flex h-16 shrink-0 items-center border-b px-6 bg-gradient-to-r from-purple-600 to-blue-600">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-lg bg-white/20 flex items-center justify-center backdrop-blur-sm">
             <span className="text-white font-bold text-lg">G</span>
@@ -213,7 +218,7 @@ export function Sidebar() {
           <h1 className="text-xl font-bold text-white">Gebeya</h1>
         </div>
       </div>
-      <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
+      <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto p-4">
         {navItems.map((item) => {
           const Icon = item.icon;
           const hasChildren = item.children && item.children.length > 0;
@@ -261,23 +266,29 @@ export function Sidebar() {
                       }
 
                       return (
-                        <Link key={child.href} href={child.href}>
-                          <Button
-                            variant={isChildActive ? 'secondary' : 'ghost'}
-                            className={cn(
-                              'w-full justify-start text-sm relative',
-                              isChildActive && 'bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300'
-                            )}
+                        <Button
+                          key={`${item.name}-${child.href}-${child.name}`}
+                          asChild
+                          variant={isChildActive ? 'secondary' : 'ghost'}
+                          className={cn(
+                            'h-auto w-full justify-start py-2 text-sm',
+                            isChildActive && 'bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300'
+                          )}
+                        >
+                          <Link
+                            href={child.href}
+                            onClick={() => onNavigate?.()}
+                            className="relative flex w-full items-center gap-2"
                           >
-                            <ChildIcon className="mr-2 h-3.5 w-3.5" />
-                            {child.name}
+                            <ChildIcon className="h-3.5 w-3.5 shrink-0" />
+                            <span className="min-w-0 flex-1 text-left">{child.name}</span>
                             {child.badge && (
-                              <span className="ml-auto bg-orange-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                              <span className="ml-auto shrink-0 rounded-full bg-orange-500 px-1.5 text-xs font-bold text-white">
                                 {child.badge}
                               </span>
                             )}
-                          </Button>
-                        </Link>
+                          </Link>
+                        </Button>
                       );
                     })}
                   </div>
@@ -287,18 +298,20 @@ export function Sidebar() {
           }
 
           return (
-            <Link key={item.href} href={item.href}>
-              <Button
-                variant={isActive ? 'secondary' : 'ghost'}
-                className={cn(
-                  'w-full justify-start',
-                  isActive && 'bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300'
-                )}
-              >
+            <Button
+              key={item.href}
+              asChild
+              variant={isActive ? 'secondary' : 'ghost'}
+              className={cn(
+                'w-full justify-start',
+                isActive && 'bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300'
+              )}
+            >
+              <Link href={item.href} onClick={() => onNavigate?.()}>
                 <Icon className="mr-2 h-4 w-4" />
                 {item.name}
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           );
         })}
       </nav>

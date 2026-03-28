@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/table';
 import {
   Dialog,
-  DialogContent,
+  MerchantDialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
@@ -245,7 +245,7 @@ export default function StockManagementPage() {
                 Transfer Stock
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <MerchantDialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Transfer Stock</DialogTitle>
                 <DialogDescription>Move stock between locations</DialogDescription>
@@ -348,7 +348,7 @@ export default function StockManagementPage() {
                   </Button>
                 </div>
               </form>
-            </DialogContent>
+            </MerchantDialogContent>
           </Dialog>
           <Dialog open={isAddStockDialogOpen} onOpenChange={setIsAddStockDialogOpen}>
             <DialogTrigger asChild>
@@ -357,7 +357,7 @@ export default function StockManagementPage() {
                 Add Stock
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+            <MerchantDialogContent className="sm:max-w-md sm:max-h-[min(90vh,calc(100dvh-2rem))]">
               <DialogHeader>
                 <DialogTitle>Add Stock</DialogTitle>
                 <DialogDescription>Create a new inventory entry</DialogDescription>
@@ -379,7 +379,7 @@ export default function StockManagementPage() {
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[400px] p-0">
+                    <PopoverContent className="w-[min(400px,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] p-0">
                       <Command shouldFilter={false}>
                         <CommandInput 
                           placeholder="Search product..." 
@@ -579,7 +579,7 @@ export default function StockManagementPage() {
                   </Button>
                 </div>
               </form>
-            </DialogContent>
+            </MerchantDialogContent>
           </Dialog>
         </div>
       </div>

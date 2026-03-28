@@ -273,12 +273,12 @@ export default function ProductsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Products</h1>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold sm:text-3xl">Products</h1>
           <p className="text-muted-foreground">Manage your perfume inventory</p>
         </div>
-        <Button onClick={handleNewProduct}>
+        <Button onClick={handleNewProduct} className="w-full shrink-0 sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Add Product
         </Button>
@@ -286,14 +286,14 @@ export default function ProductsPage() {
 
 
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
+        <CardHeader className="space-y-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
               <CardTitle>All Products</CardTitle>
               <CardDescription>Your complete product catalog</CardDescription>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="relative">
+            <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:max-w-none lg:justify-end">
+              <div className="relative min-w-0 flex-1 sm:min-w-[12rem] sm:max-w-xs">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search products..."
@@ -302,7 +302,7 @@ export default function ProductsPage() {
                     setSearch(e.target.value);
                     setPage(1); // Reset to first page on search
                   }}
-                  className="pl-8 w-64"
+                  className="w-full min-w-0 pl-8"
                 />
               </div>
               <Select
@@ -312,7 +312,7 @@ export default function ProductsPage() {
                   setPage(1); // Reset to first page on filter change
                 }}
               >
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="Filter by stock" />
                 </SelectTrigger>
                 <SelectContent>
@@ -495,6 +495,7 @@ export default function ProductsPage() {
             <SubscriptionErrorMessage error={error} title="Cannot Load Products" />
           ) : data && data.products && data.products.length > 0 ? (
             <>
+              <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -618,18 +619,19 @@ export default function ProductsPage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
               
               {/* Pagination Controls */}
               {data?.pagination && data.pagination.totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-3 mt-4 pt-4 border-t sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
                     <p className="text-sm text-muted-foreground">
                       Showing {((data.pagination.page - 1) * data.pagination.limit) + 1} to{' '}
                       {Math.min(data.pagination.page * data.pagination.limit, data.pagination.total)} of{' '}
                       {data.pagination.total} products
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Select
                       value={limit.toString()}
                       onValueChange={(value) => {

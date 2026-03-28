@@ -121,20 +121,20 @@ export default function MerchantDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Merchant Dashboard</h1>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold sm:text-3xl">Merchant Dashboard</h1>
           <p className="text-muted-foreground">Overview of your business performance</p>
         </div>
-        <div className="flex gap-2">
-          <Link href="/merchant/sales">
-            <Button>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <Link href="/merchant/sales" className="w-full sm:w-auto">
+            <Button className="w-full sm:w-auto">
               <ShoppingCart className="mr-2 h-4 w-4" />
               New Sale
             </Button>
           </Link>
-          <Link href="/merchant/products">
-            <Button variant="outline">
+          <Link href="/merchant/products" className="w-full sm:w-auto">
+            <Button variant="outline" className="w-full sm:w-auto">
               <Package className="mr-2 h-4 w-4" />
               Add Product
             </Button>

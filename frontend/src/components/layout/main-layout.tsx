@@ -10,14 +10,22 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      {/* Mobile sidebar toggle */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
+    <div className="flex min-h-dvh overflow-hidden">
+      {/* Mobile sidebar toggle — offset for notches / safe areas */}
+      <div
+        className="lg:hidden fixed z-50"
+        style={{
+          top: 'max(0.75rem, env(safe-area-inset-top, 0px))',
+          left: 'max(0.75rem, env(safe-area-inset-left, 0px))',
+        }}
+      >
         <Button
           variant="outline"
           size="icon"
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="bg-white shadow-md"
+          aria-expanded={sidebarOpen}
+          aria-label={sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
+          className="bg-background/95 shadow-md backdrop-blur-sm"
         >
           {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
         </Button>
@@ -26,12 +34,12 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <div
         className={`
-          fixed lg:static inset-y-0 left-0 z-40
+          fixed lg:static inset-y-0 left-0 z-40 min-h-0
           transform transition-transform duration-300 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
-        <Sidebar />
+        <Sidebar onNavigate={() => setSidebarOpen(false)} />
       </div>
 
       {/* Overlay for mobile */}
@@ -42,9 +50,9 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
         />
       )}
 
-      {/* Main content */}
-      <main className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 to-blue-50/30">
-        <div className="container mx-auto p-4 lg:p-6 max-w-7xl">
+      {/* Main content — left padding clears fixed menu; bottom safe area for home indicator */}
+      <main className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 to-blue-50/30 pb-[env(safe-area-inset-bottom,0px)]">
+        <div className="container mx-auto max-w-7xl px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top,0px))] pl-[calc(0.75rem+2.5rem+0.75rem+env(safe-area-inset-left,0px))] lg:px-6 lg:pb-6 lg:pt-6 lg:pl-6">
           <SubscriptionBanner />
           {children}
         </div>

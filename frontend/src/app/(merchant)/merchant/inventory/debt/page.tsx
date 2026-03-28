@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/table';
 import {
   Dialog,
-  DialogContent,
+  MerchantDialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
@@ -268,7 +268,7 @@ export default function DebtDashboardPage() {
 
       {/* Mark as Paid Dialog */}
       <Dialog open={isMarkPaidDialogOpen} onOpenChange={setIsMarkPaidDialogOpen}>
-        <DialogContent>
+        <MerchantDialogContent>
           <DialogHeader>
             <DialogTitle>Record Payment</DialogTitle>
             <DialogDescription>
@@ -326,7 +326,7 @@ export default function DebtDashboardPage() {
               </div>
             </div>
           )}
-        </DialogContent>
+        </MerchantDialogContent>
       </Dialog>
     </div>
   );

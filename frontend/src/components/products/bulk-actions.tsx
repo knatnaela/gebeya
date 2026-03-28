@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
-  DialogContent,
+  MerchantDialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
@@ -69,7 +69,7 @@ export function BulkActions({ onBulkDelete, onBulkExport, selectedIds }: BulkAct
 
   if (selectedIds.length === 0) {
     return (
-      <div className="flex gap-2">
+      <div className="flex w-full flex-wrap gap-2 sm:w-auto">
         <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
           <Upload className="mr-2 h-4 w-4" />
           Import CSV
@@ -83,7 +83,7 @@ export function BulkActions({ onBulkDelete, onBulkExport, selectedIds }: BulkAct
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
       <span className="text-sm text-muted-foreground">
         {selectedIds.length} selected
       </span>
@@ -96,7 +96,7 @@ export function BulkActions({ onBulkDelete, onBulkExport, selectedIds }: BulkAct
       </Button>
 
       <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
-        <DialogContent>
+        <MerchantDialogContent>
           <DialogHeader>
             <DialogTitle>Import Products from CSV</DialogTitle>
             <DialogDescription>
@@ -119,7 +119,7 @@ export function BulkActions({ onBulkDelete, onBulkExport, selectedIds }: BulkAct
               </Button>
             </div>
           </div>
-        </DialogContent>
+        </MerchantDialogContent>
       </Dialog>
     </div>
   );

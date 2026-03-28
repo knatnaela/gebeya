@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/table';
 import {
   Dialog,
-  DialogContent,
+  MerchantDialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
@@ -550,7 +550,7 @@ export default function NewSalePage() {
 
       {/* Receipt Dialog */}
       <Dialog open={isReceiptDialogOpen} onOpenChange={setIsReceiptDialogOpen}>
-        <DialogContent className="max-w-md">
+        <MerchantDialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Receipt</DialogTitle>
             <DialogDescription>Sale #{selectedSale?.id.slice(-8)}</DialogDescription>
@@ -681,7 +681,7 @@ export default function NewSalePage() {
               </div>
             </div>
           )}
-        </DialogContent>
+        </MerchantDialogContent>
       </Dialog>
     </div>
   );

@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/table';
 import {
   Dialog,
-  DialogContent,
+  MerchantDialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
@@ -292,7 +292,7 @@ export default function ExpensesPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
+        <MerchantDialogContent>
           <DialogHeader>
             <DialogTitle>Delete Expense</DialogTitle>
             <DialogDescription>
@@ -322,7 +322,7 @@ export default function ExpensesPage() {
               Delete
             </Button>
           </div>
-        </DialogContent>
+        </MerchantDialogContent>
       </Dialog>
     </div>
   );

@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/table';
 import {
   Dialog,
-  DialogContent,
+  MerchantDialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
@@ -195,7 +195,7 @@ export default function LocationsPage() {
           Add Location
         </Button>
         <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
-          <DialogContent className="max-w-md">
+          <MerchantDialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>{editingLocation ? 'Edit Location' : 'Add New Location'}</DialogTitle>
               <DialogDescription>
@@ -247,7 +247,7 @@ export default function LocationsPage() {
                 </Button>
               </div>
             </form>
-          </DialogContent>
+          </MerchantDialogContent>
         </Dialog>
       </div>
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, MerchantDialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -163,7 +163,7 @@ export function ProductFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <MerchantDialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{mode === 'edit' ? 'Edit Product' : 'Add New Product'}</DialogTitle>
           <DialogDescription>
@@ -173,7 +173,7 @@ export function ProductFormDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(internalSubmit)} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="name">Product Name *</Label>
               <Input id="name" {...register('name')} />
@@ -187,7 +187,7 @@ export function ProductFormDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="size">Size</Label>
               <Input id="size" placeholder="e.g. 100 (shown with unit)" {...register('size')} />
@@ -240,7 +240,7 @@ export function ProductFormDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="sku">SKU</Label>
               <Input id="sku" {...register('sku')} />
@@ -333,7 +333,7 @@ export function ProductFormDialog({
             </Button>
           </div>
         </form>
-      </DialogContent>
+      </MerchantDialogContent>
     </Dialog>
   );
 }

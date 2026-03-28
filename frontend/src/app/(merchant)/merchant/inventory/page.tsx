@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/table';
 import {
   Dialog,
-  DialogContent,
+  MerchantDialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
@@ -280,7 +280,7 @@ export default function InventoryPage() {
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <MerchantDialogContent>
           <DialogHeader>
             <DialogTitle>Adjust Stock</DialogTitle>
             <DialogDescription>Add or remove stock from a product</DialogDescription>
@@ -362,7 +362,7 @@ export default function InventoryPage() {
               </Button>
             </div>
           </div>
-        </DialogContent>
+        </MerchantDialogContent>
       </Dialog>
     </div>
   );

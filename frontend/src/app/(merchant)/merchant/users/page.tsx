@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/table';
 import {
   Dialog,
-  DialogContent,
+  MerchantDialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
@@ -194,7 +194,7 @@ export default function MerchantUsersPage() {
                 Create User
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-lg">
+            <MerchantDialogContent className="sm:max-w-lg">
               <DialogHeader>
                 <DialogTitle>Create New User</DialogTitle>
                 <DialogDescription>
@@ -262,7 +262,7 @@ export default function MerchantUsersPage() {
                   {createMutation.isPending ? 'Creating...' : 'Create User'}
                 </Button>
               </div>
-            </DialogContent>
+            </MerchantDialogContent>
           </Dialog>
         )}
       </div>
@@ -361,7 +361,7 @@ export default function MerchantUsersPage() {
           if (!open) resetForm();
         }}
       >
-        <DialogContent className="max-w-lg">
+        <MerchantDialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
             <DialogDescription>
@@ -413,7 +413,7 @@ export default function MerchantUsersPage() {
               {updateMutation.isPending ? 'Updating...' : 'Update User'}
             </Button>
           </div>
-        </DialogContent>
+        </MerchantDialogContent>
       </Dialog>
     </div>
   );
