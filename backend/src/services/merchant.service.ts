@@ -321,7 +321,6 @@ export class MerchantService {
           email,
           phone,
           address,
-          currency: 'ETB',
           status: MerchantStatus.PENDING_APPROVAL,
           isActive: false, // Inactive until approved
           updatedAt: new Date(),
@@ -352,7 +351,7 @@ export class MerchantService {
         name: result.merchant.name,
         email: result.merchant.email,
         status: result.merchant.status,
-        currency: result.merchant.currency,
+        currency: 'ETB',
       },
       message: 'Merchant registration submitted. Awaiting platform owner approval.',
     };
