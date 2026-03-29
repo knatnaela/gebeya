@@ -12,6 +12,7 @@ import '../../../core/ui/widgets/app_scaffold.dart';
 import '../../../core/auth/merchant_currency_provider.dart';
 import '../../../core/ui/widgets/primary_button.dart';
 import '../../../core/utils/app_formatters.dart';
+import '../../../core/utils/date_period_shortcuts.dart';
 import '../../inventory/screens/inventory_screen.dart';
 import '../../products/screens/products_screen.dart';
 import '../../sales/screens/new_sale_screen.dart';
@@ -310,6 +311,14 @@ Future<void> _openDateFilterSheet(BuildContext context, WidgetRef ref) async {
                 },
               ),
               ListTile(
+                leading: const Icon(Icons.event_note),
+                title: const Text('This month'),
+                onTap: () async {
+                  Navigator.of(ctx).pop();
+                  await ref.read(dashboardControllerProvider.notifier).setThisMonth();
+                },
+              ),
+              ListTile(
                 leading: const Icon(Icons.tune),
                 title: const Text('Custom range'),
                 onTap: () async {
@@ -337,6 +346,7 @@ String _periodLabel(DateTime? start, DateTime? end) {
   if (start == null || end == null) return 'All time';
   if (_matchesRollingWindow(start, end, 7)) return 'Last 7 days';
   if (_matchesRollingWindow(start, end, 30)) return 'Last 30 days';
+  if (matchesThisMonthRange(start, end)) return 'This month';
   return _formatCustomDateRange(start, end);
 }
 

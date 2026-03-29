@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import apiClient from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -31,7 +31,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ShoppingCart, Plus, Receipt, X, ArrowLeft, Save } from 'lucide-react';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { useDebounce } from '@/hooks/use-debounce';
+import { Plus, Receipt, X, ArrowLeft, Save, Check, ChevronsUpDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatCurrency, formatCurrencySmart } from '@/lib/currency';
 import { useMerchantCurrency } from '@/hooks/use-merchant-currency';
@@ -45,6 +60,9 @@ interface SaleItem {
   quantity: number;
   unitPrice: number;
   totalPrice: number;
+  /** Captured when adding — used when the full catalog is not loaded in the picker */
+  costPrice?: number;
+  catalogPrice?: number;
 }
 
 export default function NewSalePage() {
@@ -54,6 +72,11 @@ export default function NewSalePage() {
   const [selectedSale, setSelectedSale] = useState<any>(null);
   const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState('');
+  /** Full row for add + display when the product is not in the current search page */
+  const [selectedProductRow, setSelectedProductRow] = useState<any | null>(null);
+  const [productComboboxOpen, setProductComboboxOpen] = useState(false);
+  const [productSearch, setProductSearch] = useState('');
+  const debouncedProductSearch = useDebounce(productSearch, 400);
   const [quantity, setQuantity] = useState('1');
   const [isNewProductDialogOpen, setIsNewProductDialogOpen] = useState(false);
   const [notes, setNotes] = useState('');
@@ -63,13 +86,54 @@ export default function NewSalePage() {
   const [selectedLocationId, setSelectedLocationId] = useState<string>('');
   const queryClient = useQueryClient();
 
-  const { data: products } = useQuery({
-    queryKey: ['products'],
-    queryFn: async () => {
-      const res = await apiClient.get('/products', { params: { isActive: true } });
-      return res.data.data || [];
+  const PRODUCT_PICKER_PAGE = 30;
+
+  const {
+    data: productsPages,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: isLoadingProducts,
+  } = useInfiniteQuery({
+    queryKey: ['products', 'sale-picker', debouncedProductSearch],
+    queryFn: async ({ pageParam }) => {
+      const res = await apiClient.get('/products', {
+        params: {
+          isActive: true,
+          ...(debouncedProductSearch.trim() ? { search: debouncedProductSearch.trim() } : {}),
+          page: pageParam,
+          limit: PRODUCT_PICKER_PAGE,
+        },
+      });
+      return {
+        products: res.data.data || [],
+        pagination: res.data.pagination,
+      };
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      const p = lastPage.pagination;
+      if (!p || p.page >= p.totalPages) return undefined;
+      return p.page + 1;
     },
   });
+
+  const products = useMemo(
+    () => productsPages?.pages.flatMap((p) => p.products) ?? [],
+    [productsPages]
+  );
+
+  const selectedProductDisplay = useMemo(() => {
+    if (!selectedProduct) return null;
+    if (selectedProductRow?.id === selectedProduct) {
+      const p = selectedProductRow;
+      return `${p.name}${p.size ? ` (${p.size})` : ''} — ${formatCurrency(p.price, currency)}`;
+    }
+    const p = products.find((x: any) => x.id === selectedProduct);
+    return p
+      ? `${p.name}${p.size ? ` (${p.size})` : ''} — ${formatCurrency(p.price, currency)}`
+      : null;
+  }, [selectedProduct, selectedProductRow, products, currency]);
 
   const { data: locations } = useQuery({
     queryKey: ['locations'],
@@ -127,15 +191,10 @@ export default function NewSalePage() {
         return;
       }
 
-      // Optimistically add to local products cache used on this page
-      queryClient.setQueryData(['products'], (old: any) => {
-        if (!old || !Array.isArray(old)) return [createdProduct];
-        const exists = old.some((p: any) => p.id === createdProduct.id);
-        return exists ? old : [...old, createdProduct];
-      });
-
       toast.success('Product created and selected');
       setSelectedProduct(createdProduct.id);
+      setSelectedProductRow(createdProduct);
+      queryClient.invalidateQueries({ queryKey: ['products', 'sale-picker'] });
       setIsNewProductDialogOpen(false);
     },
     onError: (error: any) => {
@@ -149,8 +208,14 @@ export default function NewSalePage() {
       return;
     }
 
-    const product = products?.find((p: any) => p.id === selectedProduct);
-    if (!product) return;
+    const product =
+      selectedProductRow?.id === selectedProduct
+        ? selectedProductRow
+        : products?.find((p: any) => p.id === selectedProduct);
+    if (!product) {
+      toast.error('Product not found — try searching again');
+      return;
+    }
 
     const qty = parseInt(quantity);
     if (qty <= 0) {
@@ -198,11 +263,14 @@ export default function NewSalePage() {
           quantity: qty,
           unitPrice,
           totalPrice,
+          costPrice: Number(product.costPrice || 0),
+          catalogPrice: Number(product.price),
         },
       ]);
     }
 
     setSelectedProduct('');
+    setSelectedProductRow(null);
     setQuantity('1');
   };
 
@@ -253,7 +321,12 @@ export default function NewSalePage() {
   const totalAmount = saleItems.reduce((sum, item) => sum + item.totalPrice, 0);
   const totalCostOfGoods = saleItems.reduce((sum, item) => {
     const product = products?.find((p: any) => p.id === item.productId);
-    const costPrice = product ? Number(product.costPrice || 0) : 0;
+    const costPrice =
+      item.costPrice !== undefined
+        ? item.costPrice
+        : product
+          ? Number(product.costPrice || 0)
+          : 0;
     return sum + costPrice * item.quantity;
   }, 0);
   const totalNetIncome = totalAmount - totalCostOfGoods;
@@ -286,18 +359,96 @@ export default function NewSalePage() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
-                <Select value={selectedProduct} onValueChange={setSelectedProduct}>
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select product" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {products?.map((product: any) => (
-                      <SelectItem key={product.id} value={product.id}>
-                        {product.name}{product.size ? ` (${product.size})` : ''} - {formatCurrency(product.price, currency)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover
+                  open={productComboboxOpen}
+                  onOpenChange={(open) => {
+                    setProductComboboxOpen(open);
+                    if (!open) setProductSearch('');
+                  }}
+                >
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={productComboboxOpen}
+                      className="min-w-[220px] flex-1 justify-between font-normal"
+                    >
+                      <span className="truncate text-left">
+                        {selectedProductDisplay ?? 'Search or select product…'}
+                      </span>
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[min(420px,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] p-0" align="start">
+                    <Command shouldFilter={false}>
+                      <CommandInput
+                        placeholder="Search by name, SKU, or barcode…"
+                        value={productSearch}
+                        onValueChange={setProductSearch}
+                      />
+                      <CommandList>
+                        {isLoadingProducts ? (
+                          <div className="py-6 text-center text-sm text-muted-foreground">
+                            Loading products…
+                          </div>
+                        ) : (
+                          <>
+                            <CommandEmpty>
+                              {debouncedProductSearch.trim()
+                                ? 'No products match your search.'
+                                : 'No active products yet.'}
+                            </CommandEmpty>
+                            <CommandGroup>
+                              {products.map((product: any) => (
+                                <CommandItem
+                                  key={product.id}
+                                  value={product.id}
+                                  onSelect={() => {
+                                    setSelectedProduct(product.id);
+                                    setSelectedProductRow(product);
+                                    setProductComboboxOpen(false);
+                                    setProductSearch('');
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      'mr-2 h-4 w-4 shrink-0',
+                                      selectedProduct === product.id ? 'opacity-100' : 'opacity-0'
+                                    )}
+                                  />
+                                  <span className="min-w-0 flex-1 truncate">
+                                    {product.name}
+                                    {product.size ? ` (${product.size})` : ''}
+                                    {product.sku ? (
+                                      <span className="text-muted-foreground"> · {product.sku}</span>
+                                    ) : null}
+                                  </span>
+                                  <span className="ml-2 shrink-0 text-muted-foreground tabular-nums">
+                                    {formatCurrency(product.price, currency)}
+                                  </span>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                            {hasNextPage ? (
+                              <div className="border-t p-2">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="w-full"
+                                  disabled={isFetchingNextPage}
+                                  onClick={() => fetchNextPage()}
+                                >
+                                  {isFetchingNextPage ? 'Loading…' : 'Load more'}
+                                </Button>
+                              </div>
+                            ) : null}
+                          </>
+                        )}
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <Input
                   type="number"
                   placeholder="Qty"
@@ -346,8 +497,18 @@ export default function NewSalePage() {
                     <TableBody>
                       {saleItems.map((item, index) => {
                         const product = products?.find((p: any) => p.id === item.productId);
-                        const defaultPrice = product ? Number(product.price) : item.unitPrice;
-                        const costPrice = product ? Number(product.costPrice || 0) : 0;
+                        const defaultPrice =
+                          item.catalogPrice !== undefined
+                            ? item.catalogPrice
+                            : product
+                              ? Number(product.price)
+                              : item.unitPrice;
+                        const costPrice =
+                          item.costPrice !== undefined
+                            ? item.costPrice
+                            : product
+                              ? Number(product.costPrice || 0)
+                              : 0;
                         const priceDiffers = Math.abs(item.unitPrice - defaultPrice) > 0.01;
                         const itemProfit = (item.unitPrice - costPrice) * item.quantity;
                         const itemProfitMargin = item.unitPrice > 0 ? ((item.unitPrice - costPrice) / item.unitPrice) * 100 : 0;

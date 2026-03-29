@@ -12,6 +12,7 @@ import '../../../core/ui/widgets/app_empty_view.dart';
 import '../../../core/ui/widgets/app_error_view.dart';
 import '../../../core/ui/widgets/app_loading_skeleton.dart';
 import '../../../core/utils/app_formatters.dart';
+import '../../../core/utils/date_period_shortcuts.dart';
 import '../../../models/inventory_transaction.dart';
 import '../inventory_controller.dart';
 import '../inventory_state.dart';
@@ -460,6 +461,19 @@ class _TransactionsFilterSheetState extends State<_TransactionsFilterSheet> {
     _endDateFilter = widget.currentState.endDateFilter;
   }
 
+  void _applyThisMonth() {
+    final r = thisMonthRangeLocal();
+    setState(() {
+      _startDateFilter = r.start;
+      _endDateFilter = r.end;
+    });
+  }
+
+  bool _selectionMatchesThisMonth() {
+    if (_startDateFilter == null || _endDateFilter == null) return false;
+    return matchesThisMonthRange(_startDateFilter!, _endDateFilter!);
+  }
+
   Future<void> _selectDateRange() async {
     final picked = await showDateRangePicker(
       context: context,
@@ -538,6 +552,18 @@ class _TransactionsFilterSheetState extends State<_TransactionsFilterSheet> {
                   ),
                   const SizedBox(height: 24),
                   Text('Date Range', style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _FilterChip(
+                        label: 'This month',
+                        selected: _selectionMatchesThisMonth(),
+                        onTap: _applyThisMonth,
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 12),
                   InkWell(
                     onTap: _selectDateRange,

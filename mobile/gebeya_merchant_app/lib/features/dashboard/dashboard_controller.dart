@@ -59,6 +59,11 @@ class DashboardController extends Notifier<DashboardState> {
     await setDateRange(startDate: start, endDate: end);
   }
 
+  Future<void> setThisMonth() async {
+    final now = DateTime.now();
+    await setDateRange(startDate: DateTime(now.year, now.month, 1), endDate: now);
+  }
+
   Future<void> clearDateRange() async {
     await setDateRange(startDate: null, endDate: null);
   }

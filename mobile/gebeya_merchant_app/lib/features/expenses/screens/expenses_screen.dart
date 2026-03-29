@@ -9,6 +9,7 @@ import '../../../core/ui/widgets/app_error_view.dart';
 import '../../../core/ui/widgets/app_loading_skeleton.dart';
 import '../../../core/ui/widgets/app_scaffold.dart';
 import '../../../core/utils/app_formatters.dart';
+import '../../../core/utils/date_period_shortcuts.dart';
 import '../../../models/expense.dart';
 import '../../../models/expense_category.dart';
 import '../expenses_controller.dart';
@@ -296,6 +297,14 @@ Future<void> _openDateFilterSheet(BuildContext context, WidgetRef ref) async {
                 },
               ),
               ListTile(
+                leading: const Icon(Icons.event_note),
+                title: const Text('This month'),
+                onTap: () async {
+                  Navigator.of(ctx).pop();
+                  await ref.read(expensesControllerProvider.notifier).setThisMonth();
+                },
+              ),
+              ListTile(
                 leading: const Icon(Icons.tune),
                 title: const Text('Custom range'),
                 onTap: () async {
@@ -324,6 +333,7 @@ Future<void> _openDateFilterSheet(BuildContext context, WidgetRef ref) async {
 
 String _periodLabel(DateTime? start, DateTime? end) {
   if (start == null || end == null) return 'All time';
+  if (matchesThisMonthRange(start, end)) return 'This month';
   final s = start.toIso8601String().split('T')[0];
   final e = end.toIso8601String().split('T')[0];
   return 'Period: $s → $e';

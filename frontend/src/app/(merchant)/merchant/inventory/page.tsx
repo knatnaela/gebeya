@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import apiClient from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,7 +30,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Package, TrendingUp, TrendingDown, RefreshCw, AlertTriangle, Download } from 'lucide-react';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { useDebounce } from '@/hooks/use-debounce';
+import { formatCurrency } from '@/lib/currency';
+import {
+  Package,
+  TrendingUp,
+  TrendingDown,
+  RefreshCw,
+  AlertTriangle,
+  Check,
+  ChevronsUpDown,
+} from 'lucide-react';
 import { ExportButton } from '@/components/sales/export-button';
 import { formatCurrencySmart } from '@/lib/currency';
 import { useMerchantCurrency } from '@/hooks/use-merchant-currency';
@@ -39,10 +63,16 @@ import { format } from 'date-fns';
 import Link from 'next/link';
 import { SubscriptionErrorMessage } from '@/components/subscription/subscription-error-message';
 
+const PRODUCT_PICKER_PAGE = 30;
+
 export default function InventoryPage() {
   const currency = useMerchantCurrency();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [selectedProductId, setSelectedProductId] = useState('');
+  const [selectedProductRow, setSelectedProductRow] = useState<any | null>(null);
+  const [productComboboxOpen, setProductComboboxOpen] = useState(false);
+  const [productSearch, setProductSearch] = useState('');
+  const debouncedProductSearch = useDebounce(productSearch, 400);
   const [adjustmentType, setAdjustmentType] = useState('ADJUSTMENT');
   const [quantity, setQuantity] = useState('');
   const [reason, setReason] = useState('');
@@ -71,13 +101,53 @@ export default function InventoryPage() {
     retry: false, // Don't retry on subscription expired errors
   });
 
-  const { data: products } = useQuery({
-    queryKey: ['products'],
-    queryFn: async () => {
-      const res = await apiClient.get('/products');
-      return res.data.data || [];
+  const {
+    data: productsPages,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: isLoadingProducts,
+  } = useInfiniteQuery({
+    queryKey: ['products', 'inventory-adjust-picker', debouncedProductSearch],
+    queryFn: async ({ pageParam }) => {
+      const res = await apiClient.get('/products', {
+        params: {
+          isActive: true,
+          ...(debouncedProductSearch.trim() ? { search: debouncedProductSearch.trim() } : {}),
+          page: pageParam,
+          limit: PRODUCT_PICKER_PAGE,
+        },
+      });
+      return {
+        products: res.data.data || [],
+        pagination: res.data.pagination,
+      };
     },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      const p = lastPage.pagination;
+      if (!p || p.page >= p.totalPages) return undefined;
+      return p.page + 1;
+    },
+    enabled: isDialogOpen,
   });
+
+  const products = useMemo(
+    () => productsPages?.pages.flatMap((p) => p.products) ?? [],
+    [productsPages]
+  );
+
+  const selectedProductDisplay = useMemo(() => {
+    if (!selectedProductId) return null;
+    if (selectedProductRow?.id === selectedProductId) {
+      const p = selectedProductRow;
+      return `${p.name}${p.size ? ` (${p.size})` : ''} — ${formatCurrency(p.price, currency)}`;
+    }
+    const p = products.find((x: any) => x.id === selectedProductId);
+    return p
+      ? `${p.name}${p.size ? ` (${p.size})` : ''} — ${formatCurrency(p.price, currency)}`
+      : null;
+  }, [selectedProductId, selectedProductRow, products, currency]);
 
   const { data: locations } = useQuery({
     queryKey: ['locations'],
@@ -109,7 +179,8 @@ export default function InventoryPage() {
       setIsDialogOpen(false);
       setQuantity('');
       setReason('');
-      setSelectedProduct(null);
+      setSelectedProductId('');
+      setSelectedProductRow(null);
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.error || 'Failed to adjust stock');
@@ -117,7 +188,7 @@ export default function InventoryPage() {
   });
 
   const handleAdjustStock = () => {
-    if (!selectedProduct || !quantity) {
+    if (!selectedProductId || !quantity) {
       toast.error('Please select a product and enter quantity');
       return;
     }
@@ -130,7 +201,7 @@ export default function InventoryPage() {
 
     const locationId = selectedLocationId || defaultLocation?.id;
     adjustMutation.mutate({
-      productId: selectedProduct,
+      productId: selectedProductId,
       locationId: locationId || undefined,
       type: adjustmentType,
       quantity: adjustmentType === 'RESTOCK' ? qty : -qty,
@@ -159,7 +230,14 @@ export default function InventoryPage() {
               Manage Stock
             </Button>
           </Link>
-          <Button onClick={() => setIsDialogOpen(true)}>
+          <Button
+            onClick={() => {
+              setSelectedProductId('');
+              setSelectedProductRow(null);
+              setProductSearch('');
+              setIsDialogOpen(true);
+            }}
+          >
             <RefreshCw className="mr-2 h-4 w-4" />
             Adjust Stock
           </Button>
@@ -279,7 +357,18 @@ export default function InventoryPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog
+        open={isDialogOpen}
+        onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) {
+            setSelectedProductId('');
+            setSelectedProductRow(null);
+            setProductSearch('');
+            setProductComboboxOpen(false);
+          }
+        }}
+      >
         <MerchantDialogContent>
           <DialogHeader>
             <DialogTitle>Adjust Stock</DialogTitle>
@@ -288,18 +377,96 @@ export default function InventoryPage() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Product</Label>
-              <Select value={selectedProduct} onValueChange={setSelectedProduct}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a product" />
-                </SelectTrigger>
-                <SelectContent>
-                  {products?.map((product: any) => (
-                    <SelectItem key={product.id} value={product.id}>
-                      {product.name}{product.size ? ` (${product.size})` : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover
+                open={productComboboxOpen}
+                onOpenChange={(open) => {
+                  setProductComboboxOpen(open);
+                  if (!open) setProductSearch('');
+                }}
+              >
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={productComboboxOpen}
+                    className="w-full justify-between font-normal"
+                  >
+                    <span className="truncate text-left">
+                      {selectedProductDisplay ?? 'Search or select product…'}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[min(420px,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] p-0" align="start">
+                  <Command shouldFilter={false}>
+                    <CommandInput
+                      placeholder="Search by name, SKU, or barcode…"
+                      value={productSearch}
+                      onValueChange={setProductSearch}
+                    />
+                    <CommandList>
+                      {isLoadingProducts ? (
+                        <div className="py-6 text-center text-sm text-muted-foreground">
+                          Loading products…
+                        </div>
+                      ) : (
+                        <>
+                          <CommandEmpty>
+                            {debouncedProductSearch.trim()
+                              ? 'No products match your search.'
+                              : 'No active products yet.'}
+                          </CommandEmpty>
+                          <CommandGroup>
+                            {products.map((product: any) => (
+                              <CommandItem
+                                key={product.id}
+                                value={product.id}
+                                onSelect={() => {
+                                  setSelectedProductId(product.id);
+                                  setSelectedProductRow(product);
+                                  setProductComboboxOpen(false);
+                                  setProductSearch('');
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    'mr-2 h-4 w-4 shrink-0',
+                                    selectedProductId === product.id ? 'opacity-100' : 'opacity-0'
+                                  )}
+                                />
+                                <span className="min-w-0 flex-1 truncate">
+                                  {product.name}
+                                  {product.size ? ` (${product.size})` : ''}
+                                  {product.sku ? (
+                                    <span className="text-muted-foreground"> · {product.sku}</span>
+                                  ) : null}
+                                </span>
+                                <span className="ml-2 shrink-0 text-muted-foreground tabular-nums">
+                                  {formatCurrency(product.price, currency)}
+                                </span>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                          {hasNextPage ? (
+                            <div className="border-t p-2">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="w-full"
+                                disabled={isFetchingNextPage}
+                                onClick={() => fetchNextPage()}
+                              >
+                                {isFetchingNextPage ? 'Loading…' : 'Load more'}
+                              </Button>
+                            </div>
+                          ) : null}
+                        </>
+                      )}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="space-y-2">

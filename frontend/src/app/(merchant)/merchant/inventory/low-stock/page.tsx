@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '@/lib/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -37,7 +38,7 @@ export default function LowStockPage() {
   });
 
   // Fetch current stock for low stock products
-  const { data: productStock } = useQuery({
+  const { data: productStock, isPending: isLoadingStockLevels } = useQuery({
     queryKey: ['products-stock', lowStockProducts?.map((p: any) => p.id).join(',')],
     queryFn: async () => {
       if (!lowStockProducts || !defaultLocation) return {};
@@ -61,8 +62,39 @@ export default function LowStockPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-muted-foreground">Loading low stock products...</div>
+      <div className="space-y-6" role="status" aria-live="polite" aria-busy="true">
+        <span className="sr-only">Loading low stock products</span>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Low Stock Products</h1>
+            <p className="text-muted-foreground">Products that need restocking</p>
+          </div>
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-7 w-72 max-w-full" />
+            <Skeleton className="h-4 w-full max-w-md mt-2" />
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-md border">
+              <div className="grid grid-cols-8 gap-2 border-b bg-muted/40 px-3 py-3">
+                {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+                  <Skeleton key={i} className="h-4 w-full" />
+                ))}
+              </div>
+              {[0, 1, 2, 3, 4, 5].map((row) => (
+                <div
+                  key={row}
+                  className="grid grid-cols-8 gap-2 border-b last:border-0 px-3 py-3"
+                >
+                  {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+                    <Skeleton key={i} className="h-5 w-full" />
+                  ))}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -113,9 +145,8 @@ export default function LowStockPage() {
               </TableHeader>
               <TableBody>
                 {lowStockProducts.map((product: any) => {
-                  const currentStock = productStock?.[product.id] || 0;
-                  const isOutOfStock = currentStock === 0;
-                  const isLowStock = currentStock > 0 && currentStock <= product.lowStockThreshold;
+                  const currentStock = productStock?.[product.id] ?? 0;
+                  const isOutOfStock = !isLoadingStockLevels && currentStock === 0;
 
                   return (
                     <TableRow key={product.id}>
@@ -123,21 +154,27 @@ export default function LowStockPage() {
                       <TableCell>{product.brand || '-'}</TableCell>
                       <TableCell>{product.sku || '-'}</TableCell>
                       <TableCell>
-                        <Badge
-                          variant={isOutOfStock ? 'destructive' : 'outline'}
-                          className={
-                            isOutOfStock
-                              ? ''
-                              : 'border-orange-300 text-orange-700 bg-orange-50'
-                          }
-                        >
-                          {currentStock}
-                        </Badge>
+                        {isLoadingStockLevels ? (
+                          <Skeleton className="h-6 w-10" aria-hidden />
+                        ) : (
+                          <Badge
+                            variant={isOutOfStock ? 'destructive' : 'outline'}
+                            className={
+                              isOutOfStock
+                                ? ''
+                                : 'border-orange-300 text-orange-700 bg-orange-50'
+                            }
+                          >
+                            {currentStock}
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell>{product.lowStockThreshold}</TableCell>
                       <TableCell>{formatCurrency(product.price, currency)}</TableCell>
                       <TableCell>
-                        {isOutOfStock ? (
+                        {isLoadingStockLevels ? (
+                          <Skeleton className="h-6 w-24" aria-hidden />
+                        ) : isOutOfStock ? (
                           <Badge variant="destructive">Out of Stock</Badge>
                         ) : (
                           <Badge variant="outline" className="border-orange-300 text-orange-700 bg-orange-50">
@@ -147,7 +184,7 @@ export default function LowStockPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Link href={`/merchant/inventory/stock?productId=${product.id}`}>
+                          <Link href={`/merchant/inventory/stock/add?productId=${product.id}`}>
                             <Button variant="outline" size="sm">
                               Add Stock
                             </Button>

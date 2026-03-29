@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -32,8 +33,6 @@ import { useMerchantCurrency } from '@/hooks/use-merchant-currency';
 import Image from 'next/image';
 import { SubscriptionErrorMessage } from '@/components/subscription/subscription-error-message';
 import {
-  ProductFormDialog,
-  type ProductFormData,
   PRODUCT_MEASURE_UNIT_SHORT_LABELS,
   type ProductMeasureUnit,
 } from '@/components/products/product-form-dialog';
@@ -60,8 +59,6 @@ export default function ProductsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<any>(null);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const queryClient = useQueryClient();
 
@@ -176,38 +173,6 @@ export default function ProductsPage() {
     enabled: !!data?.products && !!defaultLocation && data.products.length > 0,
   });
 
-  const createMutation = useMutation({
-    mutationFn: async (data: ProductFormData) => {
-      const res = await apiClient.post('/products', data);
-      return res.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.refetchQueries({ queryKey: ['products'] });
-      toast.success('Product created successfully');
-      setIsDialogOpen(false);
-    },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.error || 'Failed to create product');
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: ProductFormData }) => {
-      const res = await apiClient.put(`/products/${id}`, data);
-      return res.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      toast.success('Product updated successfully');
-      setIsDialogOpen(false);
-      setEditingProduct(null);
-    },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.error || 'Failed to update product');
-    },
-  });
-
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await apiClient.delete(`/products/${id}`);
@@ -236,11 +201,6 @@ export default function ProductsPage() {
     },
   });
 
-  const handleEdit = (product: any) => {
-    setEditingProduct(product);
-    setIsDialogOpen(true);
-  };
-
   const handleDelete = (id: string) => {
     if (confirm('Are you sure you want to delete this product? It will be marked as inactive.')) {
       deleteMutation.mutate(id);
@@ -251,11 +211,6 @@ export default function ProductsPage() {
     if (confirm('Are you sure you want to reactivate this product?')) {
       reactivateMutation.mutate(id);
     }
-  };
-
-  const handleNewProduct = () => {
-    setEditingProduct(null);
-    setIsDialogOpen(true);
   };
 
   const clearFilters = () => {
@@ -278,9 +233,11 @@ export default function ProductsPage() {
           <h1 className="text-2xl font-bold sm:text-3xl">Products</h1>
           <p className="text-muted-foreground">Manage your perfume inventory</p>
         </div>
-        <Button onClick={handleNewProduct} className="w-full shrink-0 sm:w-auto">
-          <Plus className="mr-2 h-4 w-4" />
-          Add Product
+        <Button asChild className="w-full shrink-0 sm:w-auto">
+          <Link href="/merchant/products/new">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Product
+          </Link>
         </Button>
       </div>
 
@@ -579,12 +536,10 @@ export default function ProductsPage() {
                         <div className="flex justify-end gap-2">
                           {product.isActive ? (
                             <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEdit(product)}
-                          >
-                            <Edit className="h-4 w-4" />
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link href={`/merchant/products/${product.id}/edit`} aria-label="Edit product">
+                              <Edit className="h-4 w-4" />
+                            </Link>
                           </Button>
                           <Button
                             variant="ghost"
@@ -604,12 +559,10 @@ export default function ProductsPage() {
                               >
                                 <RotateCcw className="h-4 w-4" />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEdit(product)}
-                              >
-                                <Edit className="h-4 w-4" />
+                              <Button variant="ghost" size="sm" asChild>
+                                <Link href={`/merchant/products/${product.id}/edit`} aria-label="Edit product">
+                                  <Edit className="h-4 w-4" />
+                                </Link>
                               </Button>
                             </>
                           )}
@@ -680,51 +633,17 @@ export default function ProductsPage() {
             <div className="text-center py-8">
               <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
               <p className="text-muted-foreground">No products found</p>
-              <Button onClick={handleNewProduct} className="mt-4">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Your First Product
+              <Button asChild className="mt-4">
+                <Link href="/merchant/products/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Your First Product
+                </Link>
               </Button>
             </div>
           )}
         </CardContent>
       </Card>
 
-      <ProductFormDialog
-        open={isDialogOpen}
-        onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) {
-            setEditingProduct(null);
-          }
-        }}
-        mode={editingProduct ? 'edit' : 'create'}
-        initialValues={
-          editingProduct
-            ? {
-                name: editingProduct.name,
-                brand: editingProduct.brand || '',
-                size: editingProduct.size || '',
-                measureUnit: editingProduct.measureUnit || 'ML',
-                price: Number(editingProduct.price),
-                costPrice: Number(editingProduct.costPrice || 0),
-                sku: editingProduct.sku || '',
-                barcode: editingProduct.barcode || '',
-                description: editingProduct.description || '',
-                lowStockThreshold: editingProduct.lowStockThreshold,
-                imageUrl: editingProduct.imageUrl || '',
-                isActive: editingProduct.isActive ?? true,
-              }
-            : undefined
-        }
-        isSubmitting={createMutation.isPending || updateMutation.isPending}
-        onSubmit={(data) => {
-          if (editingProduct) {
-            updateMutation.mutate({ id: editingProduct.id, data });
-          } else {
-            createMutation.mutate(data);
-          }
-        }}
-      />
     </div>
   );
 }
