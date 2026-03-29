@@ -42,6 +42,13 @@ SaleItemDto _$SaleItemDtoFromJson(Map<String, dynamic> json) => SaleItemDto(
 MerchantEmbeddedDto _$MerchantEmbeddedDtoFromJson(Map<String, dynamic> json) =>
     MerchantEmbeddedDto(name: json['name'] as String?);
 
+SaleLocationEmbeddedDto _$SaleLocationEmbeddedDtoFromJson(
+  Map<String, dynamic> json,
+) => SaleLocationEmbeddedDto(
+  id: json['id'] as String?,
+  name: json['name'] as String?,
+);
+
 SaleDto _$SaleDtoFromJson(Map<String, dynamic> json) => SaleDto(
   id: json['id'] as String,
   merchantId: json['merchantId'] as String,
@@ -53,6 +60,9 @@ SaleDto _$SaleDtoFromJson(Map<String, dynamic> json) => SaleDto(
   updatedAt: DateTime.parse(json['updatedAt'] as String),
   saleDate: DateTime.parse(json['saleDate'] as String),
   customerName: json['customerName'] as String?,
+  customerPhoneCountryIso: json['customerPhoneCountryIso'] as String?,
+  customerPhoneDialCode: json['customerPhoneDialCode'] as String?,
+  customerPhoneNationalNumber: json['customerPhoneNationalNumber'] as String?,
   customerPhone: json['customerPhone'] as String?,
   saleItems: (json['sale_items'] as List<dynamic>?)
       ?.map((e) => SaleItemDto.fromJson(e as Map<String, dynamic>))
@@ -63,6 +73,16 @@ SaleDto _$SaleDtoFromJson(Map<String, dynamic> json) => SaleDto(
   merchants: json['merchants'] == null
       ? null
       : MerchantEmbeddedDto.fromJson(json['merchants'] as Map<String, dynamic>),
+  locations: json['locations'] == null
+      ? null
+      : SaleLocationEmbeddedDto.fromJson(
+          json['locations'] as Map<String, dynamic>,
+        ),
+  status: json['status'] as String?,
+  voidedAt: json['voidedAt'] == null
+      ? null
+      : DateTime.parse(json['voidedAt'] as String),
+  voidReason: json['voidReason'] as String?,
   netIncome: _numFromJson(json['netIncome']),
   profitMargin: _numFromJson(json['profitMargin']),
   costOfGoodsSold: _numFromJson(json['costOfGoodsSold']),

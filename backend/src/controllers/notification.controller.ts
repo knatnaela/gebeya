@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { notificationService } from '../services/notification.service';
 import { prisma } from '../lib/db';
+import { SaleStatus } from '@prisma/client';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 
 export class NotificationController {
@@ -26,6 +27,7 @@ export class NotificationController {
       const sales = await prisma.sales.findMany({
         where: {
           merchantId: req.user.merchantId,
+          status: SaleStatus.COMPLETED,
           createdAt: {
             gte: todayStart,
             lte: todayEnd,

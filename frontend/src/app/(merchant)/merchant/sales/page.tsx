@@ -148,6 +148,8 @@ export default function SalesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Sale Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Location</TableHead>
                   <TableHead>Items</TableHead>
                   <TableHead>Customer</TableHead>
                   <TableHead>Revenue</TableHead>
@@ -182,6 +184,16 @@ export default function SalesPage() {
                       <div className="text-xs text-muted-foreground">
                         {format(new Date(sale.createdAt), 'HH:mm')}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {sale.status === 'VOIDED' ? (
+                        <Badge variant="destructive">Voided</Badge>
+                      ) : (
+                        <Badge variant="secondary">Completed</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground max-w-[140px] truncate">
+                      {sale.locations?.name || '—'}
                     </TableCell>
                     <TableCell>
                         <div className="flex items-center gap-2">

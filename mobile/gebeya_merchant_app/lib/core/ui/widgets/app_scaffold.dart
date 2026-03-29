@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../features/subscription/subscription_controller.dart';
-import '../../../features/subscription/widgets/subscription_banner.dart';
+import '../../../features/subscription/subscription_trial_warning_banner.dart';
 
 class AppScaffold extends ConsumerWidget {
   const AppScaffold({
@@ -34,10 +34,10 @@ class AppScaffold extends ConsumerWidget {
       floatingActionButton: floatingActionButton,
       body: Column(
         children: [
-          if (subscription.isExpired)
-            SubscriptionBanner(
-              message:
-                  subscription.message ?? 'Trial subscription has expired.',
+          if (subscription.showTrialWarning && subscription.daysRemaining != null)
+            SubscriptionTrialWarningBanner(
+              daysRemaining: subscription.daysRemaining!,
+              trialEndDate: subscription.trialEndDate,
             ),
           Expanded(
             child: Padding(
@@ -50,4 +50,3 @@ class AppScaffold extends ConsumerWidget {
     );
   }
 }
-

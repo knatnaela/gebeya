@@ -12,8 +12,8 @@ import '../../../models/location.dart';
 import '../../../models/product.dart';
 import '../../products/screens/product_picker_screen.dart';
 import '../dto/create_transaction_dto.dart';
+import '../../locations/locations_repository.dart';
 import '../inventory_controller.dart';
-import '../inventory_repository.dart';
 
 class AdjustStockScreen extends ConsumerStatefulWidget {
   const AdjustStockScreen({super.key});
@@ -50,7 +50,7 @@ class _AdjustStockScreenState extends ConsumerState<AdjustStockScreen> {
 
   Future<void> _loadLocations() async {
     try {
-      final locations = await ref.read(inventoryRepositoryProvider).fetchLocations();
+      final locations = await ref.read(locationsRepositoryProvider).fetchLocations();
       final defaultLocation = locations.where((l) => l.isDefault).firstOrNull;
 
       if (mounted) {

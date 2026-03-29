@@ -2,14 +2,15 @@ import { prisma } from '../lib/db';
 import { getTenantId, ensureTenantAccess } from '../utils/tenant';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { AppError } from '../middleware/error.middleware';
-import { InventoryTransactionType, Prisma } from '@prisma/client';
-import { inventoryService } from './inventory.service';
+import { Prisma, SaleStatus } from '@prisma/client';
 import { auditService } from './audit.service';
 import { AuditAction } from '@prisma/client';
 import { subscriptionService } from './subscription.service';
 import { inventoryStockService } from './inventory-stock.service';
+import { inventoryFifoService } from './inventory-fifo.service';
 import { locationService } from './location.service';
 import { expenseService } from './expense.service';
+import { toCustomerDbPhoneFieldsOrThrow } from '../utils/phone';
 
 export interface SaleItemData {
   productId: string;
@@ -23,7 +24,10 @@ export interface CreateSaleData {
   notes?: string;
   saleDate?: Date; // Optional sale date (defaults to now)
   customerName?: string; // Optional customer full name
-  customerPhone?: string; // Optional customer phone number
+  customerPhoneCountryIso?: string;
+  customerPhoneNationalNumber?: string;
+  /** @deprecated Prefer structured fields */
+  customerPhone?: string;
 }
 
 export interface SalesFilters {
@@ -32,6 +36,7 @@ export interface SalesFilters {
   minAmount?: number;
   maxAmount?: number;
   userId?: string;
+  locationId?: string;
   page?: number;
   limit?: number;
 }
@@ -42,7 +47,10 @@ function buildSalesAnalyticsWhereSql(
   startDate?: Date,
   endDate?: Date
 ): Prisma.Sql {
-  const parts: Prisma.Sql[] = [Prisma.sql`s."merchantId" = ${merchantId}`];
+  const parts: Prisma.Sql[] = [
+    Prisma.sql`s."merchantId" = ${merchantId}`,
+    Prisma.sql`s."status" = 'COMPLETED'`,
+  ];
   if (startDate) parts.push(Prisma.sql`s."saleDate" >= ${startDate}`);
   if (endDate) parts.push(Prisma.sql`s."saleDate" <= ${endDate}`);
   return Prisma.join(parts, ' AND ');
@@ -119,52 +127,88 @@ export class SalesService {
       0
     );
 
-    // Calculate cost of goods sold (COGS)
-    const costOfGoodsSold = data.items.reduce((sum, item) => {
-      const product = products.find((p) => p.id === item.productId);
-      if (!product) return sum;
-      return sum + item.quantity * Number(product.costPrice);
-    }, 0);
-
-    // Calculate net income (profit) and profit margin
-    const netIncome = totalAmount - costOfGoodsSold;
-    const profitMargin = totalAmount > 0 ? (netIncome / totalAmount) * 100 : 0;
-
     // Calculate platform transaction fee
     const platformFee = await subscriptionService.calculateTransactionFee(totalAmount, tenantId);
 
-    // Create sale with items and update inventory in a transaction
-    const result = await prisma.$transaction(async (tx) => {
-      // Generate a cuid-like ID
+    let customerPhoneFields;
+    try {
+      customerPhoneFields = toCustomerDbPhoneFieldsOrThrow({
+        customerPhoneCountryIso: data.customerPhoneCountryIso,
+        customerPhoneNationalNumber: data.customerPhoneNationalNumber,
+        customerPhoneLegacy: data.customerPhone,
+      });
+    } catch (e) {
+      throw new AppError(e instanceof Error ? e.message : 'Invalid customer phone', 400);
+    }
+
+    const { result, costOfGoodsSold } = await prisma.$transaction(async (tx) => {
       const generateId = () => {
         const timestamp = Date.now().toString(36);
         const randomStr = Math.random().toString(36).substring(2, 15);
         return `cl${timestamp}${randomStr}`;
       };
 
-      // Create sale
+      const lineData: Array<{
+        lineCogs: number;
+        allocations: Awaited<ReturnType<typeof inventoryFifoService.allocateFifo>>;
+      }> = [];
+
+      for (const item of data.items) {
+        const product = products.find((p) => p.id === item.productId)!;
+        let allocations;
+        try {
+          allocations = await inventoryFifoService.allocateFifo(tx, {
+            productId: item.productId,
+            locationId,
+            quantity: item.quantity,
+            fallbackUnitCost: Number(product.costPrice),
+          });
+        } catch (err) {
+          if (err instanceof AppError && err.statusCode === 400) {
+            throw new AppError(
+              `Insufficient stock for ${product.name} (FIFO allocation failed).`,
+              400
+            );
+          }
+          throw err;
+        }
+        const lineCogs =
+          Math.round(allocations.reduce((s, a) => s + a.totalCost, 0) * 100) / 100;
+        lineData.push({ lineCogs, allocations });
+      }
+
+      const costOfGoodsSoldInner = lineData.reduce((s, ld) => s + ld.lineCogs, 0);
+
+      const saleItemIds = data.items.map(() => generateId());
+
       const sale = await tx.sales.create({
         data: {
           id: generateId(),
           merchantId: tenantId,
           userId: req.user!.userId,
+          locationId,
           totalAmount,
           platformFee,
-          saleDate: data.saleDate || new Date(), // Use provided sale date or current date
+          saleDate: data.saleDate || new Date(),
           customerName: data.customerName || null,
-          customerPhone: data.customerPhone || null,
+          customerPhoneCountryIso: customerPhoneFields.customerPhoneCountryIso,
+          customerPhoneDialCode: customerPhoneFields.customerPhoneDialCode,
+          customerPhoneNationalNumber: customerPhoneFields.customerPhoneNationalNumber,
+          customerPhone: customerPhoneFields.customerPhone,
           notes: data.notes,
           updatedAt: new Date(),
+          status: SaleStatus.COMPLETED,
           sale_items: {
-            create: data.items.map((item) => {
+            create: data.items.map((item, idx) => {
               const product = products.find((p) => p.id === item.productId);
               return {
-                id: generateId(),
+                id: saleItemIds[idx],
                 productId: item.productId,
                 quantity: item.quantity,
                 unitPrice: item.unitPrice,
-                defaultPrice: product ? Number(product.price) : item.unitPrice, // Store default selling price at time of sale
+                defaultPrice: product ? Number(product.price) : item.unitPrice,
                 totalPrice: item.quantity * item.unitPrice,
+                cogsAmount: lineData[idx].lineCogs,
               };
             }),
           },
@@ -193,27 +237,26 @@ export class SalesService {
         },
       });
 
-      // Create inventory transactions for each item (stock is computed, no product update needed)
-      for (const item of data.items) {
-        // Create inventory transaction
-        await tx.inventory_transactions.create({
-          data: {
-            id: generateId(),
-            merchantId: tenantId,
-            productId: item.productId,
-            locationId,
-            userId: req.user!.userId,
-            type: InventoryTransactionType.SALE,
-            quantity: -item.quantity, // Negative for sale
-            referenceId: sale.id,
-            referenceType: 'SALE',
-            reason: `Sale #${sale.id}`,
-          },
-        });
+      for (let i = 0; i < data.items.length; i++) {
+        for (const alloc of lineData[i].allocations) {
+          await tx.saleItemConsumption.create({
+            data: {
+              id: generateId(),
+              saleItemId: saleItemIds[i],
+              inventoryId: alloc.inventoryId,
+              quantity: alloc.quantity,
+              unitCost: alloc.unitCost,
+              totalCost: alloc.totalCost,
+            },
+          });
+        }
       }
 
-      return sale;
+      return { result: sale, costOfGoodsSold: costOfGoodsSoldInner };
     });
+
+    const netIncome = totalAmount - costOfGoodsSold;
+    const profitMargin = totalAmount > 0 ? (netIncome / totalAmount) * 100 : 0;
 
     // Log audit entry for sale creation
     if (req.user?.userId) {
@@ -234,6 +277,85 @@ export class SalesService {
       profitMargin,
       costOfGoodsSold,
     };
+  }
+
+  /**
+   * Void a sale: restore inventory from FIFO consumption rows and mark sale VOIDED.
+   */
+  async voidSale(req: AuthRequest, saleId: string, data?: { reason?: string }) {
+    const tenantId = getTenantId(req);
+
+    if (!tenantId) {
+      throw new AppError('Merchant ID is required', 400);
+    }
+
+    if (!req.user?.userId) {
+      throw new AppError('User ID is required', 400);
+    }
+
+    const sale = await prisma.sales.findUnique({
+      where: { id: saleId },
+      include: {
+        sale_items: { select: { id: true } },
+      },
+    });
+
+    if (!sale) {
+      throw new AppError('Sale not found', 404);
+    }
+
+    if (!ensureTenantAccess(req, sale.merchantId)) {
+      throw new AppError('Access denied', 403);
+    }
+
+    if (sale.status === SaleStatus.VOIDED) {
+      return this.getSaleById(req, saleId);
+    }
+
+    const consumptions = await prisma.saleItemConsumption.findMany({
+      where: {
+        reversedAt: null,
+        sale_items: { saleId },
+      },
+      orderBy: { id: 'asc' },
+    });
+
+    await prisma.$transaction(async (tx) => {
+      for (const row of consumptions) {
+        await tx.inventory.update({
+          where: { id: row.inventoryId },
+          data: { remainingQuantity: { increment: row.quantity } },
+        });
+        await tx.saleItemConsumption.update({
+          where: { id: row.id },
+          data: { reversedAt: new Date() },
+        });
+      }
+
+      await tx.sales.update({
+        where: { id: saleId },
+        data: {
+          status: SaleStatus.VOIDED,
+          voidedAt: new Date(),
+          voidReason: data?.reason ?? null,
+          voidedByUserId: req.user!.userId,
+          updatedAt: new Date(),
+        },
+      });
+    });
+
+    if (req.user?.userId) {
+      await auditService.createLog({
+        userId: req.user.userId,
+        merchantId: tenantId,
+        action: AuditAction.UPDATE,
+        entityType: 'Sale',
+        entityId: saleId,
+        changes: { after: { status: 'VOIDED', voidReason: data?.reason } },
+      });
+    }
+
+    return this.getSaleById(req, saleId);
   }
 
   /**
@@ -278,6 +400,10 @@ export class SalesService {
       where.userId = filters.userId;
     }
 
+    if (filters.locationId) {
+      where.locationId = filters.locationId;
+    }
+
     const [sales, total] = await Promise.all([
       prisma.sales.findMany({
         where,
@@ -307,6 +433,20 @@ export class SalesService {
               email: true,
             },
           },
+          locations: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          voidedBy: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
         },
       }),
       prisma.sales.count({ where }),
@@ -314,11 +454,23 @@ export class SalesService {
 
     // Calculate net income and profit margin for each sale
     const salesWithProfit = sales.map((sale) => {
-      const costOfGoodsSold = sale.sale_items.reduce((sum, item) => {
-        return sum + item.quantity * Number(item.products.costPrice || 0);
-      }, 0);
-      const netIncome = Number(sale.totalAmount) - costOfGoodsSold;
-      const profitMargin = Number(sale.totalAmount) > 0 ? (netIncome / Number(sale.totalAmount)) * 100 : 0;
+      const costOfGoodsSold =
+        sale.status === SaleStatus.VOIDED
+          ? 0
+          : sale.sale_items.reduce((sum, item) => {
+              const legacy = item.quantity * Number(item.products.costPrice || 0);
+              const cogs =
+                item.cogsAmount != null ? Number(item.cogsAmount) : legacy;
+              return sum + cogs;
+            }, 0);
+      const netIncome =
+        sale.status === SaleStatus.VOIDED
+          ? 0
+          : Number(sale.totalAmount) - costOfGoodsSold;
+      const profitMargin =
+        sale.status === SaleStatus.VOIDED || Number(sale.totalAmount) === 0
+          ? 0
+          : (netIncome / Number(sale.totalAmount)) * 100;
 
       return {
         ...sale,
@@ -375,8 +527,25 @@ export class SalesService {
             id: true,
             name: true,
             email: true,
+            phoneCountryIso: true,
+            phoneDialCode: true,
+            phoneNationalNumber: true,
             phone: true,
             address: true,
+          },
+        },
+        locations: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        voidedBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
           },
         },
       },
@@ -391,11 +560,23 @@ export class SalesService {
     }
 
     // Calculate net income and profit margin for this sale
-    const costOfGoodsSold = sale.sale_items.reduce((sum, item) => {
-      return sum + item.quantity * Number(item.products.costPrice || 0);
-    }, 0);
-    const netIncome = Number(sale.totalAmount) - costOfGoodsSold;
-    const profitMargin = Number(sale.totalAmount) > 0 ? (netIncome / Number(sale.totalAmount)) * 100 : 0;
+    const costOfGoodsSold =
+      sale.status === SaleStatus.VOIDED
+        ? 0
+        : sale.sale_items.reduce((sum, item) => {
+            const legacy = item.quantity * Number(item.products.costPrice || 0);
+            const cogs =
+              item.cogsAmount != null ? Number(item.cogsAmount) : legacy;
+            return sum + cogs;
+          }, 0);
+    const netIncome =
+      sale.status === SaleStatus.VOIDED
+        ? 0
+        : Number(sale.totalAmount) - costOfGoodsSold;
+    const profitMargin =
+      sale.status === SaleStatus.VOIDED || Number(sale.totalAmount) === 0
+        ? 0
+        : (netIncome / Number(sale.totalAmount)) * 100;
 
     return {
       ...sale,
@@ -417,6 +598,7 @@ export class SalesService {
 
     const where: any = {
       merchantId: tenantId,
+      status: SaleStatus.COMPLETED,
     };
 
     if (startDate || endDate) {
@@ -440,7 +622,10 @@ export class SalesService {
         },
       }),
       prisma.$queryRaw<Array<{ cogs: unknown }>>`
-        SELECT COALESCE(SUM(si.quantity * p."costPrice"), 0) AS cogs
+        SELECT COALESCE(
+          SUM(COALESCE(si."cogsAmount", si.quantity * p."costPrice")),
+          0
+        ) AS cogs
         FROM sale_items si
         INNER JOIN sales s ON s.id = si."saleId"
         INNER JOIN products p ON p.id = si."productId"
@@ -517,6 +702,7 @@ export class SalesService {
     const dailyWhere = Prisma.join(
       [
         Prisma.sql`s."merchantId" = ${merchantId}`,
+        Prisma.sql`s."status" = 'COMPLETED'`,
         Prisma.sql`s."saleDate" >= ${start}`,
         Prisma.sql`s."saleDate" <= ${end}`,
       ],

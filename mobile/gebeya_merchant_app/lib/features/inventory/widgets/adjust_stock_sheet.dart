@@ -6,6 +6,7 @@ import '../../../core/ui/widgets/primary_button.dart';
 import '../../../models/inventory_transaction.dart';
 import '../../../models/location.dart';
 import '../../../models/product.dart';
+import '../../locations/locations_repository.dart';
 import '../inventory_controller.dart';
 import '../inventory_repository.dart';
 import '../dto/create_transaction_dto.dart';
@@ -48,9 +49,10 @@ class _AdjustStockSheetState extends ConsumerState<AdjustStockSheet> {
     setState(() => _isLoading = true);
     try {
       final repo = ref.read(inventoryRepositoryProvider);
+      final locRepo = ref.read(locationsRepositoryProvider);
       final results = await Future.wait([
         repo.fetchProducts(isActive: true),
-        repo.fetchLocations(),
+        locRepo.fetchLocations(),
       ]);
 
       final products = results[0] as List<Product>;

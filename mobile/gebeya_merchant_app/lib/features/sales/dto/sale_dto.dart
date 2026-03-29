@@ -123,6 +123,17 @@ class MerchantEmbeddedDto {
 }
 
 @JsonSerializable(createToJson: false)
+class SaleLocationEmbeddedDto {
+  const SaleLocationEmbeddedDto({this.id, this.name});
+
+  final String? id;
+  final String? name;
+
+  factory SaleLocationEmbeddedDto.fromJson(Map<String, dynamic> json) =>
+      _$SaleLocationEmbeddedDtoFromJson(json);
+}
+
+@JsonSerializable(createToJson: false)
 class SaleDto {
   const SaleDto({
     required this.id,
@@ -135,10 +146,17 @@ class SaleDto {
     required this.updatedAt,
     required this.saleDate,
     this.customerName,
+    this.customerPhoneCountryIso,
+    this.customerPhoneDialCode,
+    this.customerPhoneNationalNumber,
     this.customerPhone,
     this.saleItems,
     this.users,
     this.merchants,
+    this.locations,
+    this.status,
+    this.voidedAt,
+    this.voidReason,
     this.netIncome,
     this.profitMargin,
     this.costOfGoodsSold,
@@ -156,12 +174,20 @@ class SaleDto {
   final DateTime updatedAt;
   final DateTime saleDate;
   final String? customerName;
+  final String? customerPhoneCountryIso;
+  final String? customerPhoneDialCode;
+  final String? customerPhoneNationalNumber;
   final String? customerPhone;
   @JsonKey(name: 'sale_items')
   final List<SaleItemDto>? saleItems;
   final SaleUserDto? users;
   @JsonKey(name: 'merchants')
   final MerchantEmbeddedDto? merchants;
+  @JsonKey(name: 'locations')
+  final SaleLocationEmbeddedDto? locations;
+  final String? status;
+  final DateTime? voidedAt;
+  final String? voidReason;
   @JsonKey(fromJson: _numFromJson)
   final num? netIncome;
   @JsonKey(fromJson: _numFromJson)
@@ -180,8 +206,15 @@ class SaleDto {
       totalAmount: totalAmount,
       platformFee: platformFee,
       customerName: customerName,
+      customerPhoneCountryIso: customerPhoneCountryIso,
+      customerPhoneDialCode: customerPhoneDialCode,
+      customerPhoneNationalNumber: customerPhoneNationalNumber,
       customerPhone: customerPhone,
       notes: notes,
+      status: status ?? 'COMPLETED',
+      locationName: locations?.name,
+      voidedAt: voidedAt,
+      voidReason: voidReason,
       netIncome: netIncome ?? 0,
       profitMargin: profitMargin ?? 0,
       costOfGoodsSold: costOfGoodsSold ?? 0,

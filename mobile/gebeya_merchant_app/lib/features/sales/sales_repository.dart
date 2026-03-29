@@ -64,6 +64,20 @@ class SalesRepository {
     return dto.toDomain();
   }
 
+  Future<Sale> voidSale(String id, {String? reason}) async {
+    final res = await _dio.post(Endpoints.saleVoid(id), data: {
+      if (reason != null && reason.isNotEmpty) 'reason': reason,
+    });
+    final envelope = ApiResponseDto<SaleDto>.fromJson(
+      res.data as Map<String, dynamic>,
+      (json) => SaleDto.fromJson(json as Map<String, dynamic>),
+    );
+
+    final dto = envelope.data;
+    if (dto == null) throw const SalesRepositoryException('Missing sale data.');
+    return dto.toDomain();
+  }
+
   Future<Sale> createSale(CreateSaleDto payload) async {
     final res = await _dio.post(Endpoints.sales, data: payload.toJson());
     final envelope = ApiResponseDto<SaleDto>.fromJson(

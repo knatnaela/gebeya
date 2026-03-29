@@ -3,9 +3,23 @@ import { z } from 'zod';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { merchantService, MerchantFilters } from '../services/merchant.service';
 
+const registerMerchantSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+  address: z.string().optional(),
+  password: z.string().min(6),
+  firstName: z.string().min(1),
+  lastName: z.string().optional(),
+  phoneCountryIso: z.string().length(2).optional(),
+  phoneNationalNumber: z.string().optional(),
+  phone: z.string().optional(),
+});
+
 const updateMerchantSchema = z.object({
   name: z.string().min(1).optional(),
   email: z.string().email().optional(),
+  phoneCountryIso: z.string().length(2).optional(),
+  phoneNationalNumber: z.string().optional(),
   phone: z.string().optional(),
   address: z.string().optional(),
   isActive: z.boolean().optional(),
@@ -120,13 +134,22 @@ export class MerchantController {
    */
   async registerMerchant(req: AuthRequest, res: Response): Promise<void> {
     try {
-      const result = await merchantService.registerMerchant(req.body);
+      const body = registerMerchantSchema.parse(req.body);
+      const result = await merchantService.registerMerchant(body);
 
       res.status(201).json({
         success: true,
         data: result,
       });
     } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          success: false,
+          error: 'Validation failed',
+          details: error.issues,
+        });
+        return;
+      }
       res.status(error.statusCode || 500).json({
         success: false,
         error: error.message || 'Failed to register merchant',

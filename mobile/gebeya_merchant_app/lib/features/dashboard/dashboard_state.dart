@@ -16,6 +16,14 @@ abstract class DashboardState with _$DashboardState {
     SalesAnalytics? salesAnalytics,
   }) = _DashboardState;
 
-  factory DashboardState.initial() => const DashboardState(isLoading: true);
+  factory DashboardState.initial() {
+    final end = DateTime.now();
+    final start = end.subtract(const Duration(days: 7));
+    return DashboardState(
+      isLoading: true,
+      startDate: start,
+      endDate: end,
+    );
+  }
 }
 

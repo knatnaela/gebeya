@@ -1,22 +1,40 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import apiClient from '@/lib/api';
+import { getDefaultPhoneCountryIso } from '@/lib/auth-region';
+import type { Country } from 'react-phone-number-input';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { MerchantPhoneInput } from '@/components/merchant-phone-input';
+import { splitE164ForApi } from '@/lib/phone';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const [phoneE164, setPhoneE164] = useState<string | undefined>(undefined);
+
+  const { data: publicConfig } = useQuery({
+    queryKey: ['auth-public-config'],
+    queryFn: async () => {
+      const res = await apiClient.get('/auth/public-config');
+      return res.data.data as { phoneFirstCountryIsoCodes: string[] };
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const defaultCountry = useMemo(() => {
+    const iso = getDefaultPhoneCountryIso(publicConfig?.phoneFirstCountryIsoCodes ?? []);
+    return (iso ?? 'ET') as Country;
+  }, [publicConfig?.phoneFirstCountryIsoCodes]);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    phone: '',
     address: '',
     firstName: '',
     lastName: '',
@@ -25,9 +43,18 @@ export default function RegisterPage() {
   });
 
   const registerMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
-      const { confirmPassword, ...registerData } = data;
-      const res = await apiClient.post('/merchants/register', registerData);
+    mutationFn: async (vars: {
+      name: string;
+      email: string;
+      address?: string;
+      firstName: string;
+      lastName?: string;
+      password: string;
+      phoneCountryIso?: string;
+      phoneNationalNumber?: string;
+      phone?: string;
+    }) => {
+      const res = await apiClient.post('/merchants/register', vars);
       return res.data;
     },
     onSuccess: () => {
@@ -58,7 +85,22 @@ export default function RegisterPage() {
       return;
     }
 
-    registerMutation.mutate(formData);
+    const phoneParts = splitE164ForApi(phoneE164);
+    registerMutation.mutate({
+      name: formData.name,
+      email: formData.email,
+      address: formData.address || undefined,
+      firstName: formData.firstName,
+      lastName: formData.lastName || undefined,
+      password: formData.password,
+      ...(phoneParts
+        ? {
+            phoneCountryIso: phoneParts.phoneCountryIso,
+            phoneNationalNumber: phoneParts.phoneNationalNumber,
+            phone: phoneParts.phone,
+          }
+        : {}),
+    });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -110,15 +152,13 @@ export default function RegisterPage() {
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="phone">Phone</Label>
-                <Input
+                <MerchantPhoneInput
                   id="phone"
-                  name="phone"
-                  type="tel"
-                  placeholder="+1234567890"
-                  value={formData.phone}
-                  onChange={handleChange}
+                  value={phoneE164}
+                  onChange={setPhoneE164}
+                  defaultCountry={defaultCountry}
                 />
               </div>
 

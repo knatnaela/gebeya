@@ -21,6 +21,11 @@ export interface UpdateUserData {
   roleIds?: string[];
 }
 
+export interface UpdateMyProfileData {
+  firstName?: string;
+  lastName?: string;
+}
+
 export class UserService {
   /**
    * Generate a secure temporary password
@@ -331,6 +336,26 @@ export class UserService {
       ...userWithoutPassword,
       roles: (userWithoutPassword as any).user_role_assignments?.map((ra: any) => ra.roles) || [],
     };
+  }
+
+  /**
+   * Self-service profile: first and last name only (works when subscription is expired).
+   */
+  async updateMyProfile(userId: string, data: UpdateMyProfileData) {
+    const user = await prisma.users.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+    const updateData: { firstName?: string; lastName?: string | null; updatedAt: Date } = {
+      updatedAt: new Date(),
+    };
+    if (data.firstName !== undefined) updateData.firstName = data.firstName;
+    if (data.lastName !== undefined) updateData.lastName = data.lastName;
+    await prisma.users.update({
+      where: { id: userId },
+      data: updateData,
+    });
+    return this.getUserById(userId);
   }
 
   /**

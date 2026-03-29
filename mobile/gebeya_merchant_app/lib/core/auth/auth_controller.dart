@@ -31,6 +31,7 @@ class AuthController extends Notifier<AuthState> {
       } else {
         state = AuthState.authenticated(user: user);
       }
+      await ref.read(subscriptionControllerProvider.notifier).refresh();
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {
         await ref.read(authTokenStorageProvider).clear();
@@ -43,19 +44,82 @@ class AuthController extends Notifier<AuthState> {
     }
   }
 
+  Future<void> _finishLogin(String token) async {
+    await ref.read(authTokenStorageProvider).write(token);
+
+    final user = await ref.read(authRepositoryProvider).me();
+    if (user.requiresPasswordChange) {
+      state = AuthState.requiresPasswordChange(user: user);
+    } else {
+      state = AuthState.authenticated(user: user);
+    }
+    await ref.read(subscriptionControllerProvider.notifier).refresh();
+  }
+
   Future<void> login({required String email, required String password}) async {
     state = const AuthState.loading();
 
     try {
       final token = await ref.read(authRepositoryProvider).login(email: email, password: password);
-      await ref.read(authTokenStorageProvider).write(token);
+      await _finishLogin(token);
+    } on DioException catch (e) {
+      state = const AuthState.unauthenticated();
+      throw AuthControllerException(_messageFromDio(e));
+    } catch (e) {
+      state = const AuthState.unauthenticated();
+      throw AuthControllerException(e.toString());
+    }
+  }
 
-      final user = await ref.read(authRepositoryProvider).me();
-      if (user.requiresPasswordChange) {
-        state = AuthState.requiresPasswordChange(user: user);
-      } else {
-        state = AuthState.authenticated(user: user);
-      }
+  Future<void> loginWithPhonePassword({
+    required String phoneCountryIso,
+    required String phoneNationalNumber,
+    required String password,
+  }) async {
+    state = const AuthState.loading();
+    try {
+      final token = await ref.read(authRepositoryProvider).loginWithPhonePassword(
+            phoneCountryIso: phoneCountryIso,
+            phoneNationalNumber: phoneNationalNumber,
+            password: password,
+          );
+      await _finishLogin(token);
+    } on DioException catch (e) {
+      state = const AuthState.unauthenticated();
+      throw AuthControllerException(_messageFromDio(e));
+    } catch (e) {
+      state = const AuthState.unauthenticated();
+      throw AuthControllerException(e.toString());
+    }
+  }
+
+  Future<String?> startGatewayLogin({
+    required String phoneCountryIso,
+    required String phoneNationalNumber,
+  }) async {
+    try {
+      return await ref.read(authRepositoryProvider).gatewayLoginStart(
+            phoneCountryIso: phoneCountryIso,
+            phoneNationalNumber: phoneNationalNumber,
+          );
+    } on DioException catch (e) {
+      throw AuthControllerException(_messageFromDio(e));
+    } catch (e) {
+      throw AuthControllerException(e.toString());
+    }
+  }
+
+  Future<void> gatewayLoginVerify({
+    required String requestId,
+    required String code,
+  }) async {
+    state = const AuthState.loading();
+    try {
+      final token = await ref.read(authRepositoryProvider).gatewayLoginVerify(
+            requestId: requestId,
+            code: code,
+          );
+      await _finishLogin(token);
     } on DioException catch (e) {
       state = const AuthState.unauthenticated();
       throw AuthControllerException(_messageFromDio(e));
@@ -68,7 +132,7 @@ class AuthController extends Notifier<AuthState> {
   Future<void> merchantRegister({
     required String businessName,
     required String businessEmail,
-    String? businessPhone,
+    String? businessPhoneE164,
     String? businessAddress,
     required String adminFirstName,
     String? adminLastName,
@@ -80,7 +144,7 @@ class AuthController extends Notifier<AuthState> {
           .merchantRegister(
             businessName: businessName,
             businessEmail: businessEmail,
-            businessPhone: businessPhone,
+            businessPhoneE164: businessPhoneE164,
             businessAddress: businessAddress,
             adminFirstName: adminFirstName,
             adminLastName: adminLastName,
@@ -97,6 +161,43 @@ class AuthController extends Notifier<AuthState> {
     try {
       await ref.read(authRepositoryProvider).changePassword(oldPassword: oldPassword, newPassword: newPassword);
       await logout();
+    } on DioException catch (e) {
+      throw AuthControllerException(_messageFromDio(e));
+    } catch (e) {
+      throw AuthControllerException(e.toString());
+    }
+  }
+
+  Future<void> forgotPassword(String email) async {
+    try {
+      await ref.read(authRepositoryProvider).forgotPassword(email);
+    } on DioException catch (e) {
+      throw AuthControllerException(_messageFromDio(e));
+    } catch (e) {
+      throw AuthControllerException(e.toString());
+    }
+  }
+
+  Future<void> resetPassword({required String token, required String newPassword}) async {
+    try {
+      await ref.read(authRepositoryProvider).resetPassword(token: token, newPassword: newPassword);
+    } on DioException catch (e) {
+      throw AuthControllerException(_messageFromDio(e));
+    } catch (e) {
+      throw AuthControllerException(e.toString());
+    }
+  }
+
+  Future<void> updateProfile({required String firstName, required String lastName}) async {
+    try {
+      await ref.read(authRepositoryProvider).updateProfile(firstName: firstName, lastName: lastName);
+      final user = await ref.read(authRepositoryProvider).me();
+      if (user.requiresPasswordChange) {
+        state = AuthState.requiresPasswordChange(user: user);
+      } else {
+        state = AuthState.authenticated(user: user);
+      }
+      await ref.read(subscriptionControllerProvider.notifier).refresh();
     } on DioException catch (e) {
       throw AuthControllerException(_messageFromDio(e));
     } catch (e) {

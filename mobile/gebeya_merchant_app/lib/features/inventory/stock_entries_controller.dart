@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../products/dto/product_list_response_dto.dart';
 import 'dto/add_stock_dto.dart';
 import 'dto/transfer_stock_dto.dart';
 import 'inventory_repository.dart';

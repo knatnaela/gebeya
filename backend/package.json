@@ -12,7 +12,9 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "prisma:seed": "ts-node prisma/seed.ts",
-    "backfill:merchant-rbac": "ts-node scripts/backfill-merchant-admin-rbac.ts"
+    "backfill:merchant-rbac": "ts-node scripts/backfill-merchant-admin-rbac.ts",
+    "backfill:structured-phones": "ts-node scripts/backfill-structured-phones.ts",
+    "backfill:user-phones": "ts-node scripts/backfill-user-phones-from-merchants.ts"
   },
   "keywords": [],
   "author": "",
@@ -32,7 +34,9 @@
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "express-rate-limit": "^8.3.1",
     "jsonwebtoken": "^9.0.2",
+    "libphonenumber-js": "^1.12.41",
     "node-cron": "^4.2.1",
     "prisma": "^6.18.0",
     "resend": "^6.4.0",

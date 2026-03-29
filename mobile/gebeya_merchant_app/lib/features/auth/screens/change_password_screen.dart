@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/auth_controller.dart';
+import '../../../core/ui/widgets/app_scaffold.dart';
 import '../../../core/ui/widgets/app_text_field.dart';
 import '../../../core/ui/widgets/primary_button.dart';
-import '../widgets/auth_shell.dart';
 import 'login_screen.dart';
 
 class ChangePasswordScreen extends ConsumerStatefulWidget {
@@ -14,8 +14,7 @@ class ChangePasswordScreen extends ConsumerStatefulWidget {
   static const routeLocation = '/change-password';
 
   @override
-  ConsumerState<ChangePasswordScreen> createState() =>
-      _ChangePasswordScreenState();
+  ConsumerState<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
 }
 
 class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
@@ -38,20 +37,17 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
 
     setState(() => _isLoading = true);
     try {
-      await ref.read(authControllerProvider.notifier).changePassword(
-            oldPassword: _oldPasswordController.text,
-            newPassword: _newPasswordController.text,
-          );
+      await ref
+          .read(authControllerProvider.notifier)
+          .changePassword(oldPassword: _oldPasswordController.text, newPassword: _newPasswordController.text);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password changed. Please sign in again.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Password changed. Please sign in again.')));
       context.go(LoginScreen.routeLocation);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -59,21 +55,27 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AuthShell(
+    final hintStyle = Theme.of(
+      context,
+    ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant);
+
+    return AppScaffold(
       title: 'Change password',
-      subtitle: 'For security, you must change your password before continuing.',
-      child: Form(
+      body: Form(
         key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: ListView(
           children: [
+            Text(
+              'Enter your current password and choose a new password. You will need to sign in again.',
+              style: hintStyle,
+            ),
+            const SizedBox(height: 20),
             AppTextField(
               controller: _oldPasswordController,
               label: 'Old password',
               obscureText: true,
               textInputAction: TextInputAction.next,
-              validator: (v) =>
-                  (v ?? '').isEmpty ? 'Old password is required' : null,
+              validator: (v) => (v ?? '').isEmpty ? 'Old password is required' : null,
             ),
             const SizedBox(height: 12),
             AppTextField(
@@ -89,16 +91,11 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
               },
               onFieldSubmitted: (_) => _submit(),
             ),
-            const SizedBox(height: 16),
-            PrimaryButton(
-              label: 'Update password',
-              isLoading: _isLoading,
-              onPressed: _submit,
-            ),
+            const SizedBox(height: 20),
+            PrimaryButton(label: 'Update password', isLoading: _isLoading, onPressed: _submit),
           ],
         ),
       ),
     );
   }
 }
-

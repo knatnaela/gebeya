@@ -20,7 +20,13 @@ const createSaleSchema = z.object({
     z.date(),
   ]).optional(),
   customerName: z.string().optional(),
+  customerPhoneCountryIso: z.string().length(2).optional(),
+  customerPhoneNationalNumber: z.string().optional(),
   customerPhone: z.string().optional(),
+});
+
+const voidSaleSchema = z.object({
+  reason: z.string().optional(),
 });
 
 export class SalesController {
@@ -76,6 +82,7 @@ export class SalesController {
         minAmount: req.query.minAmount ? parseFloat(req.query.minAmount as string) : undefined,
         maxAmount: req.query.maxAmount ? parseFloat(req.query.maxAmount as string) : undefined,
         userId: req.query.userId as string,
+        locationId: req.query.locationId as string | undefined,
         page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
         limit: req.query.limit ? parseInt(req.query.limit as string, 10) : undefined,
       };
@@ -91,6 +98,33 @@ export class SalesController {
       res.status(error.statusCode || 500).json({
         success: false,
         error: error.message || 'Failed to fetch sales',
+      });
+    }
+  }
+
+  async voidSale(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const validated = voidSaleSchema.parse(req.body);
+      const sale = await salesService.voidSale(req, id, validated);
+
+      res.json({
+        success: true,
+        data: sale,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          success: false,
+          error: 'Validation failed',
+          details: error.issues,
+        });
+        return;
+      }
+
+      res.status((error as any).statusCode || 500).json({
+        success: false,
+        error: (error as any).message || 'Failed to void sale',
       });
     }
   }

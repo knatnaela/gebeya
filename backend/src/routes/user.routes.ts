@@ -11,6 +11,9 @@ router.use(authenticate);
 // Password change (accessible even when subscription is expired)
 router.post('/change-password', userController.changePassword.bind(userController));
 
+// Self profile (name only; accessible when subscription is expired)
+router.patch('/me', userController.updateMe.bind(userController));
+
 // Block merchant access if subscription is expired (platform owners can still access)
 // This applies to all routes below
 router.use(checkSubscriptionStatus);

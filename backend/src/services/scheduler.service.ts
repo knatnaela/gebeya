@@ -1,5 +1,6 @@
 import cron from 'node-cron';
 import { prisma } from '../lib/db';
+import { SaleStatus } from '@prisma/client';
 import { notificationService } from './notification.service';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 
@@ -13,6 +14,7 @@ async function getMerchantSalesSummaryForCreatedRange(
   const agg = await prisma.sales.aggregate({
     where: {
       merchantId,
+      status: SaleStatus.COMPLETED,
       createdAt: { gte: rangeStart, lte: rangeEnd },
     },
     _count: true,
@@ -29,6 +31,7 @@ async function getMerchantSalesSummaryForCreatedRange(
     INNER JOIN sales s ON s.id = si."saleId"
     INNER JOIN products p ON p.id = si."productId"
     WHERE s."merchantId" = ${merchantId}
+      AND s."status" = 'COMPLETED'
       AND s."createdAt" >= ${rangeStart}
       AND s."createdAt" <= ${rangeEnd}
     GROUP BY p.name

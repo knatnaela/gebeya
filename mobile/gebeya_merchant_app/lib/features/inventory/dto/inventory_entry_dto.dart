@@ -21,6 +21,8 @@ class InventoryEntryDto {
     @JsonKey(name: 'paymentStatus', fromJson: _paymentStatusFromJson) this.paymentStatus = 'PAID',
     this.supplierName,
     this.supplierContact,
+    this.remainingQuantity,
+    this.unitCost,
     this.totalCost,
     this.paidAmount,
     this.paymentDueDate,
@@ -44,6 +46,11 @@ class InventoryEntryDto {
 
   final String? supplierName;
   final String? supplierContact;
+
+  final int? remainingQuantity;
+
+  @JsonKey(name: 'unitCost', fromJson: _decimalFromJson, toJson: _decimalToJson)
+  final double? unitCost;
 
   @JsonKey(name: 'totalCost', fromJson: _decimalFromJson, toJson: _decimalToJson)
   final double? totalCost;
@@ -101,6 +108,8 @@ class InventoryEntryDto {
       paymentStatus: PaymentStatusExtension.fromBackendString(paymentStatus),
       supplierName: supplierName,
       supplierContact: supplierContact,
+      remainingQuantity: remainingQuantity,
+      unitCost: unitCost,
       totalCost: totalCost,
       paidAmount: paidAmount,
       paymentDueDate: paymentDueDate,

@@ -10,6 +10,7 @@ import '../../../core/ui/widgets/app_error_view.dart';
 import '../../../core/ui/widgets/app_loading_skeleton.dart';
 import '../../../models/location.dart';
 import '../../../models/product.dart';
+import '../../locations/locations_repository.dart';
 import '../inventory_repository.dart';
 import '../stock_entries_controller.dart';
 import '../widgets/stock_entry_item.dart';
@@ -431,5 +432,5 @@ final _productsProvider = FutureProvider<List<Product>>((ref) async {
 });
 
 final _locationsProvider = FutureProvider<List<Location>>((ref) async {
-  return ref.read(inventoryRepositoryProvider).fetchLocations();
+  return ref.read(locationsRepositoryProvider).fetchLocations();
 });

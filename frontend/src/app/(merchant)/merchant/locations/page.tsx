@@ -38,17 +38,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { MerchantPhoneInput } from '@/components/merchant-phone-input';
+import { splitE164ForApi } from '@/lib/phone';
 
 const locationSchema = z.object({
   name: z.string().min(1, 'Location name is required'),
   address: z.string().optional(),
-  phone: z.string().optional(),
 });
 
 type LocationFormData = z.infer<typeof locationSchema>;
 
 export default function LocationsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [phoneE164, setPhoneE164] = useState<string | undefined>(undefined);
   const [editingLocation, setEditingLocation] = useState<any>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [locationToDelete, setLocationToDelete] = useState<any>(null);
@@ -63,7 +65,7 @@ export default function LocationsPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: LocationFormData) => {
+    mutationFn: async (data: Record<string, unknown>) => {
       const res = await apiClient.post('/locations', data);
       return res.data;
     },
@@ -135,10 +137,21 @@ export default function LocationsPage() {
   });
 
   const onSubmit = (data: LocationFormData) => {
+    const phoneParts = splitE164ForApi(phoneE164);
+    const phonePayload = phoneParts
+      ? {
+          phoneCountryIso: phoneParts.phoneCountryIso,
+          phoneNationalNumber: phoneParts.phoneNationalNumber,
+          phone: phoneParts.phone,
+        }
+      : editingLocation
+        ? { phoneCountryIso: '', phoneNationalNumber: '', phone: '' }
+        : {};
+    const payload = { ...data, ...phonePayload };
     if (editingLocation) {
-      updateMutation.mutate({ id: editingLocation.id, data });
+      updateMutation.mutate({ id: editingLocation.id, data: payload });
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate(payload);
     }
   };
 
@@ -147,8 +160,8 @@ export default function LocationsPage() {
     reset({
       name: location.name,
       address: location.address || '',
-      phone: location.phone || '',
     });
+    setPhoneE164(location.phone || undefined);
     setIsDialogOpen(true);
   };
 
@@ -165,12 +178,14 @@ export default function LocationsPage() {
     setIsDialogOpen(open);
     if (!open) {
       setEditingLocation(null);
+      setPhoneE164(undefined);
       reset();
     }
   };
 
   const handleNewLocation = () => {
     setEditingLocation(null);
+    setPhoneE164(undefined);
     reset();
     setIsDialogOpen(true);
   };
@@ -226,12 +241,14 @@ export default function LocationsPage() {
               </div>
               <div>
                 <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  {...register('phone')}
-                  placeholder="Enter phone number"
-                  className="mt-1"
-                />
+                <div className="mt-1">
+                  <MerchantPhoneInput
+                    id="phone"
+                    value={phoneE164}
+                    onChange={setPhoneE164}
+                    disabled={createMutation.isPending || updateMutation.isPending}
+                  />
+                </div>
               </div>
               <div className="flex justify-end gap-2 pt-4">
                 <Button

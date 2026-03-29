@@ -23,6 +23,8 @@ class CreateSaleDto {
     this.notes,
     this.saleDate,
     this.customerName,
+    this.customerPhoneCountryIso,
+    this.customerPhoneNationalNumber,
     this.customerPhone,
   });
 
@@ -32,6 +34,8 @@ class CreateSaleDto {
   /// `YYYY-MM-DD` or ISO string.
   final String? saleDate;
   final String? customerName;
+  final String? customerPhoneCountryIso;
+  final String? customerPhoneNationalNumber;
   final String? customerPhone;
 
   Map<String, dynamic> toJson() {
@@ -41,6 +45,10 @@ class CreateSaleDto {
       if (notes != null && notes!.isNotEmpty) 'notes': notes,
       if (saleDate != null && saleDate!.isNotEmpty) 'saleDate': saleDate,
       if (customerName != null && customerName!.isNotEmpty) 'customerName': customerName,
+      if (customerPhoneCountryIso != null && customerPhoneCountryIso!.isNotEmpty)
+        'customerPhoneCountryIso': customerPhoneCountryIso,
+      if (customerPhoneNationalNumber != null && customerPhoneNationalNumber!.isNotEmpty)
+        'customerPhoneNationalNumber': customerPhoneNationalNumber,
       if (customerPhone != null && customerPhone!.isNotEmpty) 'customerPhone': customerPhone,
     };
   }

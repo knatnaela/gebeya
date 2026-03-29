@@ -22,6 +22,12 @@ export interface WelcomeEmailData {
     role: string;
 }
 
+export interface PasswordResetEmailData {
+    email: string;
+    firstName: string;
+    resetUrl: string;
+}
+
 export interface LowStockEmailData {
     email: string;
     productName: string;
@@ -135,6 +141,51 @@ export class NotificationService {
             emailTo: data.email,
             type: 'WELCOME' as NotificationType,
             subject: 'Welcome to Gebeya - Your Account is Ready!',
+            content: html,
+        });
+    }
+
+    /**
+     * Send password reset link (token is only in URL, never logged here)
+     */
+    async sendPasswordResetEmail(data: PasswordResetEmailData): Promise<void> {
+        const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">Reset your password</h1>
+          </div>
+          <div style="background: white; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
+            <p>Hello ${data.firstName},</p>
+            <p>We received a request to reset your Gebeya account password. Click the button below to choose a new password. This link expires in one hour.</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${data.resetUrl}"
+                 style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600;">
+                Reset password
+              </a>
+            </div>
+            <p style="color: #6b7280; font-size: 14px;">If you did not request this, you can ignore this email.</p>
+            <p style="margin-top: 20px; color: #6b7280; font-size: 14px;">Best regards,<br>The Gebeya Team</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+        await this.sendEmail({
+            to: data.email,
+            subject: 'Reset your Gebeya password',
+            html,
+        });
+
+        await this.createNotification({
+            emailTo: data.email,
+            type: 'PASSWORD_RESET' as NotificationType,
+            subject: 'Reset your Gebeya password',
             content: html,
         });
     }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/permissions/merchant_feature_slugs.dart';
+import '../../../core/permissions/merchant_permissions_provider.dart';
 import '../../../core/ui/theme/app_icons.dart';
 import '../../dashboard/screens/dashboard_screen.dart';
 import '../../inventory/screens/inventory_screen.dart';
@@ -41,21 +43,48 @@ class HomeShell extends ConsumerStatefulWidget {
   ConsumerState<HomeShell> createState() => _HomeShellState();
 }
 
+class _NavEntry {
+  const _NavEntry({required this.branchIndex, required this.icon, required this.label});
+
+  final int branchIndex;
+  final IconData icon;
+  final String label;
+}
+
 class _HomeShellState extends ConsumerState<HomeShell> {
   @override
   Widget build(BuildContext context) {
+    final perms = ref.watch(merchantPermissionsProvider);
+
+    final entries = <_NavEntry>[
+      const _NavEntry(branchIndex: 0, icon: AppIcons.dashboard, label: 'Dashboard'),
+      if (perms.hasFeature(MerchantFeatureSlugs.productsView))
+        const _NavEntry(branchIndex: 1, icon: AppIcons.products, label: 'Products'),
+      if (perms.hasFeature(MerchantFeatureSlugs.inventoryView))
+        const _NavEntry(branchIndex: 2, icon: AppIcons.inventory, label: 'Inventory'),
+      if (perms.hasFeature(MerchantFeatureSlugs.salesView))
+        const _NavEntry(branchIndex: 3, icon: AppIcons.sales, label: 'Sales'),
+      const _NavEntry(branchIndex: 4, icon: AppIcons.more, label: 'More'),
+    ];
+
+    final branchIndices = entries.map((e) => e.branchIndex).toList();
+    final current = widget.navigationShell.currentIndex;
+    var selected = branchIndices.indexOf(current);
+    if (selected < 0) selected = 0;
+
     return Scaffold(
       body: widget.navigationShell,
       bottomNavigationBar: NavigationBar(
-        selectedIndex: widget.navigationShell.currentIndex,
-        onDestinationSelected: (idx) =>
-            widget.navigationShell.goBranch(idx, initialLocation: idx == widget.navigationShell.currentIndex),
-        destinations: const [
-          NavigationDestination(icon: Icon(AppIcons.dashboard), label: 'Dashboard'),
-          NavigationDestination(icon: Icon(AppIcons.products), label: 'Products'),
-          NavigationDestination(icon: Icon(AppIcons.inventory), label: 'Inventory'),
-          NavigationDestination(icon: Icon(AppIcons.sales), label: 'Sales'),
-          NavigationDestination(icon: Icon(AppIcons.more), label: 'More'),
+        selectedIndex: selected,
+        onDestinationSelected: (i) {
+          widget.navigationShell.goBranch(
+            branchIndices[i],
+            initialLocation: branchIndices[i] == widget.navigationShell.currentIndex,
+          );
+        },
+        destinations: [
+          for (final e in entries)
+            NavigationDestination(icon: Icon(e.icon), label: e.label),
         ],
       ),
     );

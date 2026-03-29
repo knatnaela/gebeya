@@ -21,6 +21,10 @@ abstract class InventoryEntry with _$InventoryEntry {
     @Default(PaymentStatus.paid) PaymentStatus paymentStatus,
     String? supplierName,
     String? supplierContact,
+    /// Unsold units in this batch (FIFO).
+    int? remainingQuantity,
+    /// Unit cost frozen at receipt.
+    double? unitCost,
     double? totalCost,
     double? paidAmount,
     DateTime? paymentDueDate,

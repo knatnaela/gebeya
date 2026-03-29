@@ -5,6 +5,7 @@ import { AppError } from '../middleware/error.middleware';
 import { InventoryTransactionType } from '@prisma/client';
 import { notificationService } from './notification.service';
 import { locationService } from './location.service';
+import { inventoryFifoService } from './inventory-fifo.service';
 
 export interface AddStockData {
   productId: string;
@@ -43,62 +44,21 @@ export interface TransferStockData {
 
 export class InventoryStockService {
   /**
-   * Calculate current stock for a product at a location
-   * 
-   * Stock calculation logic:
-   * 1. Inventory entries: Stock physically received (from STOCK_IN and TRANSFER_IN operations)
-   * 2. Transactions: All stock movements that affect inventory but don't create inventory entries:
-   *    - SALE: reduces stock (quantity is negative)
-   *    - TRANSFER_OUT: reduces stock at source (quantity is negative)
-   *    - ADJUSTMENT: can be positive (stock increase/correction) or negative (stock decrease/correction)
-   *    - RESTOCK: increases stock (quantity is positive) - but doesn't create inventory entry
-   *    - RETURN: increases stock (quantity is positive) - but doesn't create inventory entry
-   * 
-   * We exclude STOCK_IN and TRANSFER_IN because they create inventory entries.
-   * 
-   * Formula: Stock = SUM(inventory entries) + SUM(all transactions except STOCK_IN and TRANSFER_IN)
+   * On-hand stock = sum of batch remainingQuantity (FIFO layers).
+   * Legacy SALE / TRANSFER_OUT transactions are audit-only and do not affect this total.
    */
   async getCurrentStock(productId: string, locationId?: string): Promise<number> {
-    // Sum all Inventory entries (stock physically received via STOCK_IN and TRANSFER_IN)
-    const inventoryWhere: any = { productId };
+    const inventoryWhere: Record<string, unknown> = { productId };
     if (locationId) {
       inventoryWhere.locationId = locationId;
     }
 
     const inventorySum = await prisma.inventory.aggregate({
       where: inventoryWhere,
-      _sum: { quantity: true },
+      _sum: { remainingQuantity: true },
     });
 
-    // Sum all transactions EXCEPT STOCK_IN and TRANSFER_IN (which create inventory entries)
-    // This includes: SALE, TRANSFER_OUT, ADJUSTMENT (positive/negative), RESTOCK, RETURN
-    const transactionWhere: any = {
-      productId,
-      type: {
-        notIn: [InventoryTransactionType.STOCK_IN, InventoryTransactionType.TRANSFER_IN],
-      },
-    };
-    if (locationId) {
-      transactionWhere.locationId = locationId;
-    }
-
-    const transactionSum = await prisma.inventory_transactions.aggregate({
-      where: transactionWhere,
-      _sum: { quantity: true },
-    });
-
-    const totalInventory = inventorySum._sum.quantity || 0;
-    const totalTransactions = transactionSum._sum.quantity || 0; // Can be positive or negative
-
-    // Debug logging (can remove later)
-    if (totalInventory + totalTransactions < 0) {
-      console.log(`[DEBUG] Stock calculation for product ${productId}, location ${locationId || 'all'}:`);
-      console.log(`  Inventory entries sum: ${totalInventory}`);
-      console.log(`  Transactions sum (excluding STOCK_IN/TRANSFER_IN): ${totalTransactions}`);
-      console.log(`  Total: ${totalInventory + totalTransactions}`);
-    }
-
-    return totalInventory + totalTransactions;
+    return inventorySum._sum.remainingQuantity ?? 0;
   }
 
   /**
@@ -110,8 +70,7 @@ export class InventoryStockService {
   ): Promise<Record<string, number>> {
     const stockMap: Record<string, number> = {};
 
-    // Get inventory sums per product
-    const inventoryWhere: any = {
+    const inventoryWhere: Record<string, unknown> = {
       productId: { in: productIds },
     };
     if (locationId) {
@@ -121,33 +80,13 @@ export class InventoryStockService {
     const inventoryEntries = await prisma.inventory.groupBy({
       by: ['productId'],
       where: inventoryWhere,
-      _sum: { quantity: true },
+      _sum: { remainingQuantity: true },
     });
 
-    // Get transaction sums per product (excluding STOCK_IN and TRANSFER_IN)
-    const transactionWhere: any = {
-      productId: { in: productIds },
-      type: {
-        notIn: [InventoryTransactionType.STOCK_IN, InventoryTransactionType.TRANSFER_IN],
-      },
-    };
-    if (locationId) {
-      transactionWhere.locationId = locationId;
-    }
-
-    const transactions = await prisma.inventory_transactions.groupBy({
-      by: ['productId'],
-      where: transactionWhere,
-      _sum: { quantity: true },
-    });
-
-    // Combine results
     for (const productId of productIds) {
-      const inventorySum =
-        inventoryEntries.find((e) => e.productId === productId)?._sum.quantity || 0;
-      const transactionSum =
-        transactions.find((t) => t.productId === productId)?._sum.quantity || 0;
-      stockMap[productId] = inventorySum + transactionSum;
+      const sumRem =
+        inventoryEntries.find((e) => e.productId === productId)?._sum.remainingQuantity || 0;
+      stockMap[productId] = sumRem;
     }
 
     return stockMap;
@@ -213,6 +152,11 @@ export class InventoryStockService {
       const paymentStatus = data.paymentStatus || 'PAID';
       const paidAt = paymentStatus === 'PAID' ? new Date() : null;
 
+      const unitCost =
+        data.totalCost != null && data.quantity > 0
+          ? Number(data.totalCost) / data.quantity
+          : Number(product.costPrice);
+
       // Create immutable Inventory entry
       const inventoryEntry = await tx.inventory.create({
         data: {
@@ -220,6 +164,8 @@ export class InventoryStockService {
           productId: data.productId,
           locationId,
           quantity: data.quantity,
+          remainingQuantity: data.quantity,
+          unitCost,
           batchNumber: data.batchNumber,
           expirationDate: data.expirationDate,
           receivedDate: data.receivedDate || new Date(),
@@ -245,6 +191,14 @@ export class InventoryStockService {
               email: true,
             },
           },
+        },
+      });
+
+      await tx.products.update({
+        where: { id: data.productId },
+        data: {
+          costPrice: unitCost,
+          updatedAt: new Date(),
         },
       });
 
@@ -537,39 +491,10 @@ export class InventoryStockService {
     // Check available stock at source location
     const availableStock = await this.getCurrentStock(data.productId, data.fromLocationId);
 
-    // If stock is negative, get detailed breakdown to help diagnose
     if (availableStock < 0) {
-      // Get detailed breakdown for better error message
-      const inventoryWhere: any = { productId: data.productId, locationId: data.fromLocationId };
-      const transactionWhere: any = {
-        productId: data.productId,
-        locationId: data.fromLocationId,
-        type: {
-          notIn: [InventoryTransactionType.STOCK_IN, InventoryTransactionType.TRANSFER_IN],
-        },
-      };
-
-      const [inventoryEntries, transactions] = await Promise.all([
-        prisma.inventory.findMany({ where: inventoryWhere, select: { quantity: true } }),
-        prisma.inventory_transactions.findMany({
-          where: transactionWhere,
-          select: { type: true, quantity: true },
-        }),
-      ]);
-
-      const inventoryTotal = inventoryEntries.reduce((sum, e) => sum + e.quantity, 0);
-      const transactionTotal = transactions.reduce((sum, t) => sum + t.quantity, 0);
-
-      console.error(`[ERROR] Negative stock for product ${data.productId} at location ${data.fromLocationId}:`);
-      console.error(`  Inventory entries: ${inventoryEntries.length} entries, total: ${inventoryTotal}`);
-      console.error(`  Transactions: ${transactions.length} transactions, total: ${transactionTotal}`);
-      console.error(`  Calculated stock: ${availableStock}`);
-
       throw new AppError(
         `Cannot transfer from "${fromLocation.name}": Stock is negative (${availableStock}). ` +
-        `This location has ${inventoryEntries.length} inventory entries (total: ${inventoryTotal}) ` +
-        `and ${transactions.length} outbound transactions (total: ${transactionTotal}). ` +
-        `Please add stock to this location first to correct the negative balance.`,
+          `Please correct stock at this location first.`,
         400
       );
     }
@@ -581,66 +506,41 @@ export class InventoryStockService {
       );
     }
 
-    // Create transfer transactions and inventory entry at destination
-    // When stock is transferred, it's physically received at the destination location,
-    // so we create a new inventory entry there. The inventory entries table will show
-    // all stock physically present at each location, making it easy to see what's where.
+    // FIFO consume at source; new batch at destination with weighted average unit cost.
     const result = await prisma.$transaction(async (tx) => {
-      // Generate a cuid-like ID
       const generateId = () => {
         const timestamp = Date.now().toString(36);
         const randomStr = Math.random().toString(36).substring(2, 15);
         return `cl${timestamp}${randomStr}`;
       };
 
-      // Create TRANSFER_OUT transaction at source location (negative quantity)
-      const transferOut = await tx.inventory_transactions.create({
-        data: {
-          id: generateId(),
-          merchantId: tenantId,
-          productId: data.productId,
-          locationId: data.fromLocationId,
-          userId: req.user!.userId,
-          type: InventoryTransactionType.TRANSFER_OUT,
-          quantity: -data.quantity,
-          referenceType: 'TRANSFER',
-          reason: data.notes || `Transfer to ${toLocation.name}`,
-        },
+      const allocations = await inventoryFifoService.allocateFifo(tx, {
+        productId: data.productId,
+        locationId: data.fromLocationId,
+        quantity: data.quantity,
+        fallbackUnitCost: Number(product.costPrice),
       });
 
-      // Create new inventory entry at destination location (stock is physically received there)
-      // This makes the inventory entries table clear - you can see all stock at each location
+      const avgUnit = inventoryFifoService.weightedAverageUnitCost(allocations);
+      const totalCostDest =
+        Math.round(allocations.reduce((s, a) => s + a.totalCost, 0) * 100) / 100;
+
       const inventoryEntry = await tx.inventory.create({
         data: {
           id: generateId(),
           productId: data.productId,
           locationId: data.toLocationId,
           quantity: data.quantity,
+          remainingQuantity: data.quantity,
+          unitCost: avgUnit,
+          totalCost: totalCostDest,
           receivedDate: new Date(),
           notes: data.notes || `Transferred from ${fromLocation.name}`,
           addedBy: req.user!.userId,
         },
       });
 
-      // Create TRANSFER_IN transaction at destination for audit trail
-      // Note: This transaction is NOT counted in stock calculation (excluded in getCurrentStock)
-      // It's only for tracking/history purposes
-      const transferIn = await tx.inventory_transactions.create({
-        data: {
-          id: generateId(),
-          merchantId: tenantId,
-          productId: data.productId,
-          locationId: data.toLocationId,
-          userId: req.user!.userId,
-          type: InventoryTransactionType.TRANSFER_IN,
-          quantity: data.quantity, // This won't be counted in stock calculation
-          referenceId: inventoryEntry.id,
-          referenceType: 'TRANSFER',
-          reason: data.notes || `Transfer from ${fromLocation.name}`,
-        },
-      });
-
-      return { transferOut, transferIn, inventoryEntry };
+      return { inventoryEntry };
     });
 
     // Check for low stock at source location after transfer

@@ -22,6 +22,8 @@ InventoryEntryDto _$InventoryEntryDtoFromJson(Map<String, dynamic> json) =>
       paymentStatus: json['paymentStatus'] as String? ?? 'PAID',
       supplierName: json['supplierName'] as String?,
       supplierContact: json['supplierContact'] as String?,
+      remainingQuantity: (json['remainingQuantity'] as num?)?.toInt(),
+      unitCost: InventoryEntryDto._decimalFromJson(json['unitCost']),
       totalCost: InventoryEntryDto._decimalFromJson(json['totalCost']),
       paidAmount: InventoryEntryDto._decimalFromJson(json['paidAmount']),
       paymentDueDate: json['paymentDueDate'] == null
@@ -57,6 +59,8 @@ Map<String, dynamic> _$InventoryEntryDtoToJson(InventoryEntryDto instance) =>
       'paymentStatus': instance.paymentStatus,
       'supplierName': instance.supplierName,
       'supplierContact': instance.supplierContact,
+      'remainingQuantity': instance.remainingQuantity,
+      'unitCost': InventoryEntryDto._decimalToJson(instance.unitCost),
       'totalCost': InventoryEntryDto._decimalToJson(instance.totalCost),
       'paidAmount': InventoryEntryDto._decimalToJson(instance.paidAmount),
       'paymentDueDate': instance.paymentDueDate?.toIso8601String(),

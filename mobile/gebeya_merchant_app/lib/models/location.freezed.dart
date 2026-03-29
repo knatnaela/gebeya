@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Location {
 
- String get id; String get merchantId; String get name; String? get address; String? get phone; bool get isActive; bool get isDefault; DateTime get createdAt; DateTime get updatedAt;
+ String get id; String get merchantId; String get name; String? get address; String? get phoneCountryIso; String? get phoneDialCode; String? get phoneNationalNumber; String? get phone; bool get isActive; bool get isDefault; DateTime get createdAt; DateTime get updatedAt;
 /// Create a copy of Location
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $LocationCopyWith<Location> get copyWith => _$LocationCopyWithImpl<Location>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Location&&(identical(other.id, id) || other.id == id)&&(identical(other.merchantId, merchantId) || other.merchantId == merchantId)&&(identical(other.name, name) || other.name == name)&&(identical(other.address, address) || other.address == address)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.isDefault, isDefault) || other.isDefault == isDefault)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Location&&(identical(other.id, id) || other.id == id)&&(identical(other.merchantId, merchantId) || other.merchantId == merchantId)&&(identical(other.name, name) || other.name == name)&&(identical(other.address, address) || other.address == address)&&(identical(other.phoneCountryIso, phoneCountryIso) || other.phoneCountryIso == phoneCountryIso)&&(identical(other.phoneDialCode, phoneDialCode) || other.phoneDialCode == phoneDialCode)&&(identical(other.phoneNationalNumber, phoneNationalNumber) || other.phoneNationalNumber == phoneNationalNumber)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.isDefault, isDefault) || other.isDefault == isDefault)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,merchantId,name,address,phone,isActive,isDefault,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,merchantId,name,address,phoneCountryIso,phoneDialCode,phoneNationalNumber,phone,isActive,isDefault,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'Location(id: $id, merchantId: $merchantId, name: $name, address: $address, phone: $phone, isActive: $isActive, isDefault: $isDefault, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'Location(id: $id, merchantId: $merchantId, name: $name, address: $address, phoneCountryIso: $phoneCountryIso, phoneDialCode: $phoneDialCode, phoneNationalNumber: $phoneNationalNumber, phone: $phone, isActive: $isActive, isDefault: $isDefault, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $LocationCopyWith<$Res>  {
   factory $LocationCopyWith(Location value, $Res Function(Location) _then) = _$LocationCopyWithImpl;
 @useResult
 $Res call({
- String id, String merchantId, String name, String? address, String? phone, bool isActive, bool isDefault, DateTime createdAt, DateTime updatedAt
+ String id, String merchantId, String name, String? address, String? phoneCountryIso, String? phoneDialCode, String? phoneNationalNumber, String? phone, bool isActive, bool isDefault, DateTime createdAt, DateTime updatedAt
 });
 
 
@@ -65,12 +65,15 @@ class _$LocationCopyWithImpl<$Res>
 
 /// Create a copy of Location
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? merchantId = null,Object? name = null,Object? address = freezed,Object? phone = freezed,Object? isActive = null,Object? isDefault = null,Object? createdAt = null,Object? updatedAt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? merchantId = null,Object? name = null,Object? address = freezed,Object? phoneCountryIso = freezed,Object? phoneDialCode = freezed,Object? phoneNationalNumber = freezed,Object? phone = freezed,Object? isActive = null,Object? isDefault = null,Object? createdAt = null,Object? updatedAt = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,merchantId: null == merchantId ? _self.merchantId : merchantId // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,address: freezed == address ? _self.address : address // ignore: cast_nullable_to_non_nullable
+as String?,phoneCountryIso: freezed == phoneCountryIso ? _self.phoneCountryIso : phoneCountryIso // ignore: cast_nullable_to_non_nullable
+as String?,phoneDialCode: freezed == phoneDialCode ? _self.phoneDialCode : phoneDialCode // ignore: cast_nullable_to_non_nullable
+as String?,phoneNationalNumber: freezed == phoneNationalNumber ? _self.phoneNationalNumber : phoneNationalNumber // ignore: cast_nullable_to_non_nullable
 as String?,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
 as String?,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
 as bool,isDefault: null == isDefault ? _self.isDefault : isDefault // ignore: cast_nullable_to_non_nullable
@@ -161,10 +164,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String merchantId,  String name,  String? address,  String? phone,  bool isActive,  bool isDefault,  DateTime createdAt,  DateTime updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String merchantId,  String name,  String? address,  String? phoneCountryIso,  String? phoneDialCode,  String? phoneNationalNumber,  String? phone,  bool isActive,  bool isDefault,  DateTime createdAt,  DateTime updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Location() when $default != null:
-return $default(_that.id,_that.merchantId,_that.name,_that.address,_that.phone,_that.isActive,_that.isDefault,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.merchantId,_that.name,_that.address,_that.phoneCountryIso,_that.phoneDialCode,_that.phoneNationalNumber,_that.phone,_that.isActive,_that.isDefault,_that.createdAt,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -182,10 +185,10 @@ return $default(_that.id,_that.merchantId,_that.name,_that.address,_that.phone,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String merchantId,  String name,  String? address,  String? phone,  bool isActive,  bool isDefault,  DateTime createdAt,  DateTime updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String merchantId,  String name,  String? address,  String? phoneCountryIso,  String? phoneDialCode,  String? phoneNationalNumber,  String? phone,  bool isActive,  bool isDefault,  DateTime createdAt,  DateTime updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _Location():
-return $default(_that.id,_that.merchantId,_that.name,_that.address,_that.phone,_that.isActive,_that.isDefault,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.merchantId,_that.name,_that.address,_that.phoneCountryIso,_that.phoneDialCode,_that.phoneNationalNumber,_that.phone,_that.isActive,_that.isDefault,_that.createdAt,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -202,10 +205,10 @@ return $default(_that.id,_that.merchantId,_that.name,_that.address,_that.phone,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String merchantId,  String name,  String? address,  String? phone,  bool isActive,  bool isDefault,  DateTime createdAt,  DateTime updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String merchantId,  String name,  String? address,  String? phoneCountryIso,  String? phoneDialCode,  String? phoneNationalNumber,  String? phone,  bool isActive,  bool isDefault,  DateTime createdAt,  DateTime updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _Location() when $default != null:
-return $default(_that.id,_that.merchantId,_that.name,_that.address,_that.phone,_that.isActive,_that.isDefault,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.merchantId,_that.name,_that.address,_that.phoneCountryIso,_that.phoneDialCode,_that.phoneNationalNumber,_that.phone,_that.isActive,_that.isDefault,_that.createdAt,_that.updatedAt);case _:
   return null;
 
 }
@@ -217,13 +220,16 @@ return $default(_that.id,_that.merchantId,_that.name,_that.address,_that.phone,_
 @JsonSerializable()
 
 class _Location implements Location {
-  const _Location({required this.id, required this.merchantId, required this.name, this.address, this.phone, this.isActive = true, this.isDefault = false, required this.createdAt, required this.updatedAt});
+  const _Location({required this.id, required this.merchantId, required this.name, this.address, this.phoneCountryIso, this.phoneDialCode, this.phoneNationalNumber, this.phone, this.isActive = true, this.isDefault = false, required this.createdAt, required this.updatedAt});
   factory _Location.fromJson(Map<String, dynamic> json) => _$LocationFromJson(json);
 
 @override final  String id;
 @override final  String merchantId;
 @override final  String name;
 @override final  String? address;
+@override final  String? phoneCountryIso;
+@override final  String? phoneDialCode;
+@override final  String? phoneNationalNumber;
 @override final  String? phone;
 @override@JsonKey() final  bool isActive;
 @override@JsonKey() final  bool isDefault;
@@ -243,16 +249,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Location&&(identical(other.id, id) || other.id == id)&&(identical(other.merchantId, merchantId) || other.merchantId == merchantId)&&(identical(other.name, name) || other.name == name)&&(identical(other.address, address) || other.address == address)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.isDefault, isDefault) || other.isDefault == isDefault)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Location&&(identical(other.id, id) || other.id == id)&&(identical(other.merchantId, merchantId) || other.merchantId == merchantId)&&(identical(other.name, name) || other.name == name)&&(identical(other.address, address) || other.address == address)&&(identical(other.phoneCountryIso, phoneCountryIso) || other.phoneCountryIso == phoneCountryIso)&&(identical(other.phoneDialCode, phoneDialCode) || other.phoneDialCode == phoneDialCode)&&(identical(other.phoneNationalNumber, phoneNationalNumber) || other.phoneNationalNumber == phoneNationalNumber)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.isDefault, isDefault) || other.isDefault == isDefault)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,merchantId,name,address,phone,isActive,isDefault,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,merchantId,name,address,phoneCountryIso,phoneDialCode,phoneNationalNumber,phone,isActive,isDefault,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'Location(id: $id, merchantId: $merchantId, name: $name, address: $address, phone: $phone, isActive: $isActive, isDefault: $isDefault, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'Location(id: $id, merchantId: $merchantId, name: $name, address: $address, phoneCountryIso: $phoneCountryIso, phoneDialCode: $phoneDialCode, phoneNationalNumber: $phoneNationalNumber, phone: $phone, isActive: $isActive, isDefault: $isDefault, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -263,7 +269,7 @@ abstract mixin class _$LocationCopyWith<$Res> implements $LocationCopyWith<$Res>
   factory _$LocationCopyWith(_Location value, $Res Function(_Location) _then) = __$LocationCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String merchantId, String name, String? address, String? phone, bool isActive, bool isDefault, DateTime createdAt, DateTime updatedAt
+ String id, String merchantId, String name, String? address, String? phoneCountryIso, String? phoneDialCode, String? phoneNationalNumber, String? phone, bool isActive, bool isDefault, DateTime createdAt, DateTime updatedAt
 });
 
 
@@ -280,12 +286,15 @@ class __$LocationCopyWithImpl<$Res>
 
 /// Create a copy of Location
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? merchantId = null,Object? name = null,Object? address = freezed,Object? phone = freezed,Object? isActive = null,Object? isDefault = null,Object? createdAt = null,Object? updatedAt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? merchantId = null,Object? name = null,Object? address = freezed,Object? phoneCountryIso = freezed,Object? phoneDialCode = freezed,Object? phoneNationalNumber = freezed,Object? phone = freezed,Object? isActive = null,Object? isDefault = null,Object? createdAt = null,Object? updatedAt = null,}) {
   return _then(_Location(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,merchantId: null == merchantId ? _self.merchantId : merchantId // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,address: freezed == address ? _self.address : address // ignore: cast_nullable_to_non_nullable
+as String?,phoneCountryIso: freezed == phoneCountryIso ? _self.phoneCountryIso : phoneCountryIso // ignore: cast_nullable_to_non_nullable
+as String?,phoneDialCode: freezed == phoneDialCode ? _self.phoneDialCode : phoneDialCode // ignore: cast_nullable_to_non_nullable
+as String?,phoneNationalNumber: freezed == phoneNationalNumber ? _self.phoneNationalNumber : phoneNationalNumber // ignore: cast_nullable_to_non_nullable
 as String?,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
 as String?,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
 as bool,isDefault: null == isDefault ? _self.isDefault : isDefault // ignore: cast_nullable_to_non_nullable

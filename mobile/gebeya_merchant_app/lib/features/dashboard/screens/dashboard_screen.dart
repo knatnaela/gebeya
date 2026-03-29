@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/ui/theme/app_colors.dart';
 import '../../../core/ui/theme/app_icons.dart';
@@ -185,10 +186,7 @@ class _DashboardContent extends StatelessWidget {
               children: [
                 Text('Quick actions', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 12),
-                PrimaryButton(
-                  label: 'New Sale',
-                  onPressed: () => context.push(NewSaleScreen.routeLocation),
-                ),
+                PrimaryButton(label: 'New Sale', onPressed: () => context.push(NewSaleScreen.routeLocation)),
                 const SizedBox(height: 10),
                 OutlinedButton(
                   onPressed: () => context.go(ProductsScreen.routeLocation),
@@ -224,10 +222,8 @@ class _KpiGrid extends StatelessWidget {
         childAspectRatio: 1.25,
       ),
       itemCount: items.length,
-      itemBuilder: (context, i) => AppCard(
-        backgroundColor: AppColors.kpiCardBackground(context, items[i].backgroundColor),
-        child: items[i],
-      ),
+      itemBuilder: (context, i) =>
+          AppCard(backgroundColor: AppColors.kpiCardBackground(context, items[i].backgroundColor), child: items[i]),
     );
   }
 }
@@ -339,8 +335,29 @@ Future<void> _openDateFilterSheet(BuildContext context, WidgetRef ref) async {
 
 String _periodLabel(DateTime? start, DateTime? end) {
   if (start == null || end == null) return 'All time';
-  final s = start.toIso8601String().split('T')[0];
-  final e = end.toIso8601String().split('T')[0];
-  return '$s → $e';
+  if (_matchesRollingWindow(start, end, 7)) return 'Last 7 days';
+  if (_matchesRollingWindow(start, end, 30)) return 'Last 30 days';
+  return _formatCustomDateRange(start, end);
 }
 
+/// True when [start]/[end] match [DashboardController.setLastDays] (rolling window from now).
+bool _matchesRollingWindow(DateTime start, DateTime end, int days) {
+  final expectedStart = end.subtract(Duration(days: days));
+  return (start.difference(expectedStart).inSeconds).abs() <= 120;
+}
+
+String _formatCustomDateRange(DateTime start, DateTime end) {
+  final sameYear = start.year == end.year;
+  final dayMonth = DateFormat('d MMM');
+  final full = DateFormat('d MMM yyyy');
+  if (!sameYear) {
+    return '${full.format(start)} – ${full.format(end)}';
+  }
+  if (start.month == end.month && start.day == end.day) {
+    return full.format(end);
+  }
+  if (start.month == end.month) {
+    return '${DateFormat('d').format(start)}–${dayMonth.format(end)} ${end.year}';
+  }
+  return '${dayMonth.format(start)} – ${full.format(end)}';
+}

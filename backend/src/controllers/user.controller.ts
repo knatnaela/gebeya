@@ -27,6 +27,15 @@ const changePasswordSchema = z.object({
   newPassword: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
+const updateMeSchema = z
+  .object({
+    firstName: z.string().min(1).optional(),
+    lastName: z.string().optional(),
+  })
+  .refine((d) => d.firstName !== undefined || d.lastName !== undefined, {
+    message: 'Provide firstName and/or lastName',
+  });
+
 export class UserController {
   /**
    * Create a new user with temporary password
@@ -176,6 +185,42 @@ export class UserController {
       res.status(error.statusCode || 500).json({
         success: false,
         error: error.message || 'Failed to fetch user',
+      });
+    }
+  }
+
+  /**
+   * Update own profile (name only); allowed when subscription expired.
+   */
+  async updateMe(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: 'Authentication required',
+        });
+        return;
+      }
+
+      const validatedData = updateMeSchema.parse(req.body);
+      const user = await userService.updateMyProfile(req.user.userId, validatedData);
+
+      res.json({
+        success: true,
+        data: user,
+      });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          success: false,
+          error: 'Validation failed',
+          details: error.issues,
+        });
+        return;
+      }
+      res.status(error.statusCode || 500).json({
+        success: false,
+        error: error.message || 'Failed to update profile',
       });
     }
   }

@@ -1,29 +1,59 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
 import apiClient from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Receipt, Download, TrendingUp, DollarSign, Package, User } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { ArrowLeft, Receipt, Download, TrendingUp, DollarSign, Package, User, Ban } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { formatCurrency, formatCurrencySmart } from '@/lib/currency';
 import { useMerchantCurrency } from '@/hooks/use-merchant-currency';
+import { useState } from 'react';
 
 export default function SaleDetailPage() {
   const currency = useMerchantCurrency();
   const params = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const saleId = params.id as string;
+  const [voidOpen, setVoidOpen] = useState(false);
+  const [voidReason, setVoidReason] = useState('');
 
   const { data: sale, isLoading, error } = useQuery({
     queryKey: ['sale', saleId],
     queryFn: async () => {
       const res = await apiClient.get(`/sales/${saleId}`);
       return res.data.data;
+    },
+  });
+
+  const voidMutation = useMutation({
+    mutationFn: async (reason?: string) => {
+      await apiClient.post(`/sales/${saleId}/void`, { reason: reason || undefined });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sale', saleId] });
+      queryClient.invalidateQueries({ queryKey: ['sales'] });
+      setVoidOpen(false);
+      setVoidReason('');
+      toast.success('Sale voided. Inventory was restored where applicable.');
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.error || 'Failed to void sale');
     },
   });
 
@@ -76,7 +106,15 @@ export default function SaleDetailPage() {
             Back
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Sale Details</h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-3xl font-bold">Sale Details</h1>
+              {sale.status === 'VOIDED' && (
+                <Badge variant="destructive">Voided</Badge>
+              )}
+              {sale.locations?.name && (
+                <Badge variant="secondary">{sale.locations.name}</Badge>
+              )}
+            </div>
             <p className="text-muted-foreground">
               Sale Date: {format(new Date(sale.saleDate || sale.createdAt), 'MMMM d, yyyy')}
               {' • '}
@@ -90,12 +128,53 @@ export default function SaleDetailPage() {
           </div>
         </div>
         <div className="flex gap-2">
+          {sale.status !== 'VOIDED' && (
+            <Button
+              variant="destructive"
+              onClick={() => setVoidOpen(true)}
+              disabled={voidMutation.isPending}
+            >
+              <Ban className="mr-2 h-4 w-4" />
+              Void sale
+            </Button>
+          )}
           <Button variant="outline" onClick={() => window.print()}>
             <Download className="mr-2 h-4 w-4" />
             Print
           </Button>
         </div>
       </div>
+
+      <AlertDialog open={voidOpen} onOpenChange={setVoidOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Void this sale?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Stock from this sale will be returned to the original inventory batches (FIFO reversal).
+              This sale will be excluded from revenue and COGS analytics.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-2">
+            <label className="text-sm text-muted-foreground">Reason (optional)</label>
+            <Textarea
+              value={voidReason}
+              onChange={(e) => setVoidReason(e.target.value)}
+              placeholder="e.g. Customer returned items"
+              className="mt-1"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={voidMutation.isPending}>Cancel</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              disabled={voidMutation.isPending}
+              onClick={() => voidMutation.mutate(voidReason.trim() || undefined)}
+            >
+              {voidMutation.isPending ? 'Voiding…' : 'Void sale'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Key Metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -309,6 +388,24 @@ export default function SaleDetailPage() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Phone:</span>
                 <span>{sale.customerPhone}</span>
+              </div>
+            )}
+            {sale.locations?.name && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Location:</span>
+                <span>{sale.locations.name}</span>
+              </div>
+            )}
+            {sale.status === 'VOIDED' && sale.voidedAt && (
+              <div className="flex justify-between text-destructive">
+                <span>Voided:</span>
+                <span>{format(new Date(sale.voidedAt), 'MMM d, yyyy h:mm a')}</span>
+              </div>
+            )}
+            {sale.voidReason && (
+              <div className="pt-2 border-t">
+                <p className="text-sm text-muted-foreground mb-1">Void reason:</p>
+                <p className="text-sm">{sale.voidReason}</p>
               </div>
             )}
             {sale.notes && (

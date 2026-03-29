@@ -1,14 +1,19 @@
 import { prisma } from '../lib/db';
+import { SaleStatus } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { AppError } from '../middleware/error.middleware';
 import bcrypt from 'bcryptjs';
 import { MerchantStatus, Prisma, RoleType, UserRole } from '@prisma/client';
 import { subscriptionService } from './subscription.service';
 import { isValidMerchantCurrency, normalizeMerchantCurrency } from '../utils/currency';
+import { toOptionalDbPhoneFieldsOrThrow } from '../utils/phone';
 
 export interface CreateMerchantData {
   name: string;
   email: string;
+  phoneCountryIso?: string;
+  phoneNationalNumber?: string;
+  /** @deprecated Prefer phoneCountryIso + phoneNationalNumber */
   phone?: string;
   address?: string;
   companyId?: string;
@@ -19,6 +24,9 @@ export interface CreateMerchantData {
 export interface RegisterMerchantData {
   name: string;
   email: string;
+  phoneCountryIso?: string;
+  phoneNationalNumber?: string;
+  /** @deprecated Prefer structured fields */
   phone?: string;
   address?: string;
   password: string;
@@ -169,7 +177,7 @@ export class MerchantService {
 
     // Get sales analytics
     const salesData = await prisma.sales.aggregate({
-      where: { merchantId },
+      where: { merchantId, status: SaleStatus.COMPLETED },
       _sum: { totalAmount: true },
       _count: true,
     });
@@ -252,6 +260,7 @@ export class MerchantService {
     // Aggregate sales data
     const salesData = await prisma.sales.aggregate({
       where: {
+        status: SaleStatus.COMPLETED,
         merchants: {
           companyId,
         },
@@ -264,6 +273,7 @@ export class MerchantService {
     const merchantSales = await prisma.sales.groupBy({
       by: ['merchantId'],
       where: {
+        status: SaleStatus.COMPLETED,
         merchants: {
           companyId,
         },
@@ -308,7 +318,18 @@ export class MerchantService {
    * Register a new merchant (public endpoint - self-registration)
    */
   async registerMerchant(data: RegisterMerchantData) {
-    const { name, email, phone, address, password, firstName, lastName } = data;
+    const { name, email, address, password, firstName, lastName } = data;
+
+    let phoneFields;
+    try {
+      phoneFields = toOptionalDbPhoneFieldsOrThrow({
+        phoneCountryIso: data.phoneCountryIso,
+        phoneNationalNumber: data.phoneNationalNumber,
+        phoneLegacy: data.phone,
+      });
+    } catch (e) {
+      throw new AppError(e instanceof Error ? e.message : 'Invalid phone', 400);
+    }
 
     // Check if merchant with this email already exists
     const existingMerchant = await prisma.merchants.findUnique({
@@ -326,6 +347,21 @@ export class MerchantService {
 
     if (existingUser) {
       throw new AppError('User with this email already exists', 400);
+    }
+
+    if (phoneFields.phone) {
+      const existingUserPhone = await prisma.users.findFirst({
+        where: { phone: phoneFields.phone },
+      });
+      if (existingUserPhone) {
+        throw new AppError('An account with this phone number already exists', 400);
+      }
+      const existingMerchantPhone = await prisma.merchants.findFirst({
+        where: { phone: phoneFields.phone },
+      });
+      if (existingMerchantPhone) {
+        throw new AppError('A business with this phone number is already registered', 400);
+      }
     }
 
     // Hash password
@@ -346,7 +382,10 @@ export class MerchantService {
           id: generateId(),
           name,
           email,
-          phone,
+          phoneCountryIso: phoneFields.phoneCountryIso,
+          phoneDialCode: phoneFields.phoneDialCode,
+          phoneNationalNumber: phoneFields.phoneNationalNumber,
+          phone: phoneFields.phone,
           address,
           status: MerchantStatus.PENDING_APPROVAL,
           isActive: false, // Inactive until approved
@@ -365,6 +404,10 @@ export class MerchantService {
           role: UserRole.MERCHANT_ADMIN,
           merchantId: merchant.id,
           isActive: false,
+          phoneCountryIso: phoneFields.phoneCountryIso,
+          phoneDialCode: phoneFields.phoneDialCode,
+          phoneNationalNumber: phoneFields.phoneNationalNumber,
+          phone: phoneFields.phone,
           updatedAt: new Date(), // Inactive until merchant is approved
         },
       });
@@ -409,8 +452,27 @@ export class MerchantService {
 
     if (data.name !== undefined) updatePayload.name = data.name;
     if (data.email !== undefined) updatePayload.email = data.email;
-    if (data.phone !== undefined) updatePayload.phone = data.phone;
     if (data.address !== undefined) updatePayload.address = data.address;
+
+    const phoneTouched =
+      data.phoneCountryIso !== undefined ||
+      data.phoneNationalNumber !== undefined ||
+      data.phone !== undefined;
+    if (phoneTouched) {
+      try {
+        const pf = toOptionalDbPhoneFieldsOrThrow({
+          phoneCountryIso: data.phoneCountryIso,
+          phoneNationalNumber: data.phoneNationalNumber,
+          phoneLegacy: data.phone,
+        });
+        updatePayload.phoneCountryIso = pf.phoneCountryIso;
+        updatePayload.phoneDialCode = pf.phoneDialCode;
+        updatePayload.phoneNationalNumber = pf.phoneNationalNumber;
+        updatePayload.phone = pf.phone;
+      } catch (e) {
+        throw new AppError(e instanceof Error ? e.message : 'Invalid phone', 400);
+      }
+    }
     if (data.isActive !== undefined) updatePayload.isActive = data.isActive;
 
     if (data.currency !== undefined) {

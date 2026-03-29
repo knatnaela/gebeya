@@ -2,16 +2,23 @@ import { prisma } from '../lib/db';
 import { getTenantId, ensureTenantAccess } from '../utils/tenant';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { AppError } from '../middleware/error.middleware';
+import { toOptionalDbPhoneFieldsOrThrow } from '../utils/phone';
 
 export interface CreateLocationData {
   name: string;
   address?: string;
+  phoneCountryIso?: string;
+  phoneNationalNumber?: string;
+  /** @deprecated Prefer structured fields */
   phone?: string;
 }
 
 export interface UpdateLocationData {
   name?: string;
   address?: string;
+  phoneCountryIso?: string;
+  phoneNationalNumber?: string;
+  /** @deprecated Prefer structured fields */
   phone?: string;
   isActive?: boolean;
 }
@@ -62,13 +69,27 @@ export class LocationService {
       return `cl${timestamp}${randomStr}`;
     };
 
+    let phoneFields;
+    try {
+      phoneFields = toOptionalDbPhoneFieldsOrThrow({
+        phoneCountryIso: data.phoneCountryIso,
+        phoneNationalNumber: data.phoneNationalNumber,
+        phoneLegacy: data.phone,
+      });
+    } catch (e) {
+      throw new AppError(e instanceof Error ? e.message : 'Invalid phone', 400);
+    }
+
     const location = await prisma.locations.create({
       data: {
         id: generateId(),
         merchantId: tenantId,
         name: data.name,
         address: data.address,
-        phone: data.phone,
+        phoneCountryIso: phoneFields.phoneCountryIso,
+        phoneDialCode: phoneFields.phoneDialCode,
+        phoneNationalNumber: phoneFields.phoneNationalNumber,
+        phone: phoneFields.phone,
         isDefault,
       },
     });
@@ -139,9 +160,39 @@ export class LocationService {
       }
     }
 
+    const phoneTouched =
+      data.phoneCountryIso !== undefined ||
+      data.phoneNationalNumber !== undefined ||
+      data.phone !== undefined;
+
+    let updateData: Parameters<typeof prisma.locations.update>[0]['data'] = {
+      ...(data.name !== undefined ? { name: data.name } : {}),
+      ...(data.address !== undefined ? { address: data.address } : {}),
+      ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
+    };
+
+    if (phoneTouched) {
+      try {
+        const pf = toOptionalDbPhoneFieldsOrThrow({
+          phoneCountryIso: data.phoneCountryIso,
+          phoneNationalNumber: data.phoneNationalNumber,
+          phoneLegacy: data.phone,
+        });
+        updateData = {
+          ...updateData,
+          phoneCountryIso: pf.phoneCountryIso,
+          phoneDialCode: pf.phoneDialCode,
+          phoneNationalNumber: pf.phoneNationalNumber,
+          phone: pf.phone,
+        };
+      } catch (e) {
+        throw new AppError(e instanceof Error ? e.message : 'Invalid phone', 400);
+      }
+    }
+
     const updated = await prisma.locations.update({
       where: { id: locationId },
-      data,
+      data: updateData,
     });
 
     return updated;

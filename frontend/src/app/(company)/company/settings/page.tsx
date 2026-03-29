@@ -26,12 +26,15 @@ export default function SettingsPage() {
 
   const [defaultTrialPeriodDays, setDefaultTrialPeriodDays] = useState('');
   const [defaultTransactionFeeRate, setDefaultTransactionFeeRate] = useState('');
+  const [phoneFirstCountryIsoCodes, setPhoneFirstCountryIsoCodes] = useState('');
 
   // Initialize form when settings load
   useEffect(() => {
     if (platformSettings) {
       setDefaultTrialPeriodDays(platformSettings.defaultTrialPeriodDays?.toString());
       setDefaultTransactionFeeRate(Number(platformSettings.defaultTransactionFeeRate).toFixed(2));
+      const codes = platformSettings.phoneFirstCountryIsoCodes as string[] | undefined;
+      setPhoneFirstCountryIsoCodes(codes?.length ? codes.join(', ') : '');
     }
   }, [platformSettings]);
 
@@ -39,6 +42,7 @@ export default function SettingsPage() {
     mutationFn: async (data: {
       defaultTrialPeriodDays?: number;
       defaultTransactionFeeRate?: number;
+      phoneFirstCountryIsoCodes?: string[];
     }) => {
       const res = await apiClient.patch('/platform-settings', data);
       return res.data;
@@ -66,9 +70,15 @@ export default function SettingsPage() {
       return;
     }
 
+    const codes = phoneFirstCountryIsoCodes
+      .split(/[\s,]+/)
+      .map((c) => c.trim().toUpperCase())
+      .filter((c) => /^[A-Z]{2}$/.test(c));
+
     updateSettingsMutation.mutate({
       defaultTrialPeriodDays: trialDays,
       defaultTransactionFeeRate: feeRate,
+      phoneFirstCountryIsoCodes: codes,
     });
   };
 
@@ -213,6 +223,21 @@ export default function SettingsPage() {
               />
               <p className="text-xs text-muted-foreground">
                 Default percentage fee charged on each sale (0-100)
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phoneFirstCountries">Phone-first countries (ISO codes)</Label>
+              <Input
+                id="phoneFirstCountries"
+                type="text"
+                value={phoneFirstCountryIsoCodes}
+                onChange={(e) => setPhoneFirstCountryIsoCodes(e.target.value)}
+                placeholder="ET, NG, KE"
+              />
+              <p className="text-xs text-muted-foreground">
+                Comma-separated ISO 3166-1 alpha-2 codes. Merchant login and registration default to the phone tab when
+                the user&apos;s locale matches one of these regions.
               </p>
             </div>
 

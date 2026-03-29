@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
 
 import '../../../core/auth/auth_controller.dart';
 import '../../../core/ui/widgets/app_text_field.dart';
@@ -23,7 +24,6 @@ class _MerchantSignupScreenState extends ConsumerState<MerchantSignupScreen> {
 
   final _businessNameController = TextEditingController();
   final _businessEmailController = TextEditingController();
-  final _businessPhoneController = TextEditingController();
   final _businessAddressController = TextEditingController();
 
   final _adminFirstNameController = TextEditingController();
@@ -32,12 +32,12 @@ class _MerchantSignupScreenState extends ConsumerState<MerchantSignupScreen> {
   final _confirmPasswordController = TextEditingController();
 
   bool _isLoading = false;
+  String? _businessPhoneE164;
 
   @override
   void dispose() {
     _businessNameController.dispose();
     _businessEmailController.dispose();
-    _businessPhoneController.dispose();
     _businessAddressController.dispose();
     _adminFirstNameController.dispose();
     _adminLastNameController.dispose();
@@ -55,9 +55,7 @@ class _MerchantSignupScreenState extends ConsumerState<MerchantSignupScreen> {
       await ref.read(authControllerProvider.notifier).merchantRegister(
             businessName: _businessNameController.text.trim(),
             businessEmail: _businessEmailController.text.trim(),
-            businessPhone: _businessPhoneController.text.trim().isEmpty
-                ? null
-                : _businessPhoneController.text.trim(),
+            businessPhoneE164: _businessPhoneE164,
             businessAddress: _businessAddressController.text.trim().isEmpty
                 ? null
                 : _businessAddressController.text.trim(),
@@ -121,11 +119,19 @@ class _MerchantSignupScreenState extends ConsumerState<MerchantSignupScreen> {
               },
             ),
             const SizedBox(height: 12),
-            AppTextField(
-              controller: _businessPhoneController,
-              label: 'Phone (optional)',
-              keyboardType: TextInputType.phone,
-              textInputAction: TextInputAction.next,
+            IntlPhoneField(
+              decoration: const InputDecoration(
+                labelText: 'Phone (optional)',
+                border: OutlineInputBorder(),
+              ),
+              initialCountryCode: 'ET',
+              disableLengthCheck: true,
+              onChanged: (phone) {
+                final c = phone.completeNumber.trim();
+                setState(() {
+                  _businessPhoneE164 = c.isEmpty ? null : (c.startsWith('+') ? c : '+$c');
+                });
+              },
             ),
             const SizedBox(height: 12),
             AppTextField(

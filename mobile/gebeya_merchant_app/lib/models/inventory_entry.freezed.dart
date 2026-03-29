@@ -15,7 +15,9 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$InventoryEntry {
 
- String get id; String get productId; String get locationId; int get quantity; String? get batchNumber; DateTime? get expirationDate; DateTime get receivedDate; String? get notes; String get addedBy; PaymentStatus get paymentStatus; String? get supplierName; String? get supplierContact; double? get totalCost; double? get paidAmount; DateTime? get paymentDueDate; DateTime? get paidAt;// Nested objects (populated from DTO)
+ String get id; String get productId; String get locationId; int get quantity; String? get batchNumber; DateTime? get expirationDate; DateTime get receivedDate; String? get notes; String get addedBy; PaymentStatus get paymentStatus; String? get supplierName; String? get supplierContact;/// Unsold units in this batch (FIFO).
+ int? get remainingQuantity;/// Unit cost frozen at receipt.
+ double? get unitCost; double? get totalCost; double? get paidAmount; DateTime? get paymentDueDate; DateTime? get paidAt;// Nested objects (populated from DTO)
  EntryProduct? get product; Location? get location; EntryUser? get user;
 /// Create a copy of InventoryEntry
 /// with the given fields replaced by the non-null parameter values.
@@ -29,16 +31,16 @@ $InventoryEntryCopyWith<InventoryEntry> get copyWith => _$InventoryEntryCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InventoryEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.locationId, locationId) || other.locationId == locationId)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.batchNumber, batchNumber) || other.batchNumber == batchNumber)&&(identical(other.expirationDate, expirationDate) || other.expirationDate == expirationDate)&&(identical(other.receivedDate, receivedDate) || other.receivedDate == receivedDate)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.addedBy, addedBy) || other.addedBy == addedBy)&&(identical(other.paymentStatus, paymentStatus) || other.paymentStatus == paymentStatus)&&(identical(other.supplierName, supplierName) || other.supplierName == supplierName)&&(identical(other.supplierContact, supplierContact) || other.supplierContact == supplierContact)&&(identical(other.totalCost, totalCost) || other.totalCost == totalCost)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.paymentDueDate, paymentDueDate) || other.paymentDueDate == paymentDueDate)&&(identical(other.paidAt, paidAt) || other.paidAt == paidAt)&&(identical(other.product, product) || other.product == product)&&(identical(other.location, location) || other.location == location)&&(identical(other.user, user) || other.user == user));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InventoryEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.locationId, locationId) || other.locationId == locationId)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.batchNumber, batchNumber) || other.batchNumber == batchNumber)&&(identical(other.expirationDate, expirationDate) || other.expirationDate == expirationDate)&&(identical(other.receivedDate, receivedDate) || other.receivedDate == receivedDate)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.addedBy, addedBy) || other.addedBy == addedBy)&&(identical(other.paymentStatus, paymentStatus) || other.paymentStatus == paymentStatus)&&(identical(other.supplierName, supplierName) || other.supplierName == supplierName)&&(identical(other.supplierContact, supplierContact) || other.supplierContact == supplierContact)&&(identical(other.remainingQuantity, remainingQuantity) || other.remainingQuantity == remainingQuantity)&&(identical(other.unitCost, unitCost) || other.unitCost == unitCost)&&(identical(other.totalCost, totalCost) || other.totalCost == totalCost)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.paymentDueDate, paymentDueDate) || other.paymentDueDate == paymentDueDate)&&(identical(other.paidAt, paidAt) || other.paidAt == paidAt)&&(identical(other.product, product) || other.product == product)&&(identical(other.location, location) || other.location == location)&&(identical(other.user, user) || other.user == user));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,productId,locationId,quantity,batchNumber,expirationDate,receivedDate,notes,addedBy,paymentStatus,supplierName,supplierContact,totalCost,paidAmount,paymentDueDate,paidAt,product,location,user]);
+int get hashCode => Object.hashAll([runtimeType,id,productId,locationId,quantity,batchNumber,expirationDate,receivedDate,notes,addedBy,paymentStatus,supplierName,supplierContact,remainingQuantity,unitCost,totalCost,paidAmount,paymentDueDate,paidAt,product,location,user]);
 
 @override
 String toString() {
-  return 'InventoryEntry(id: $id, productId: $productId, locationId: $locationId, quantity: $quantity, batchNumber: $batchNumber, expirationDate: $expirationDate, receivedDate: $receivedDate, notes: $notes, addedBy: $addedBy, paymentStatus: $paymentStatus, supplierName: $supplierName, supplierContact: $supplierContact, totalCost: $totalCost, paidAmount: $paidAmount, paymentDueDate: $paymentDueDate, paidAt: $paidAt, product: $product, location: $location, user: $user)';
+  return 'InventoryEntry(id: $id, productId: $productId, locationId: $locationId, quantity: $quantity, batchNumber: $batchNumber, expirationDate: $expirationDate, receivedDate: $receivedDate, notes: $notes, addedBy: $addedBy, paymentStatus: $paymentStatus, supplierName: $supplierName, supplierContact: $supplierContact, remainingQuantity: $remainingQuantity, unitCost: $unitCost, totalCost: $totalCost, paidAmount: $paidAmount, paymentDueDate: $paymentDueDate, paidAt: $paidAt, product: $product, location: $location, user: $user)';
 }
 
 
@@ -49,7 +51,7 @@ abstract mixin class $InventoryEntryCopyWith<$Res>  {
   factory $InventoryEntryCopyWith(InventoryEntry value, $Res Function(InventoryEntry) _then) = _$InventoryEntryCopyWithImpl;
 @useResult
 $Res call({
- String id, String productId, String locationId, int quantity, String? batchNumber, DateTime? expirationDate, DateTime receivedDate, String? notes, String addedBy, PaymentStatus paymentStatus, String? supplierName, String? supplierContact, double? totalCost, double? paidAmount, DateTime? paymentDueDate, DateTime? paidAt, EntryProduct? product, Location? location, EntryUser? user
+ String id, String productId, String locationId, int quantity, String? batchNumber, DateTime? expirationDate, DateTime receivedDate, String? notes, String addedBy, PaymentStatus paymentStatus, String? supplierName, String? supplierContact, int? remainingQuantity, double? unitCost, double? totalCost, double? paidAmount, DateTime? paymentDueDate, DateTime? paidAt, EntryProduct? product, Location? location, EntryUser? user
 });
 
 
@@ -66,7 +68,7 @@ class _$InventoryEntryCopyWithImpl<$Res>
 
 /// Create a copy of InventoryEntry
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? productId = null,Object? locationId = null,Object? quantity = null,Object? batchNumber = freezed,Object? expirationDate = freezed,Object? receivedDate = null,Object? notes = freezed,Object? addedBy = null,Object? paymentStatus = null,Object? supplierName = freezed,Object? supplierContact = freezed,Object? totalCost = freezed,Object? paidAmount = freezed,Object? paymentDueDate = freezed,Object? paidAt = freezed,Object? product = freezed,Object? location = freezed,Object? user = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? productId = null,Object? locationId = null,Object? quantity = null,Object? batchNumber = freezed,Object? expirationDate = freezed,Object? receivedDate = null,Object? notes = freezed,Object? addedBy = null,Object? paymentStatus = null,Object? supplierName = freezed,Object? supplierContact = freezed,Object? remainingQuantity = freezed,Object? unitCost = freezed,Object? totalCost = freezed,Object? paidAmount = freezed,Object? paymentDueDate = freezed,Object? paidAt = freezed,Object? product = freezed,Object? location = freezed,Object? user = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,productId: null == productId ? _self.productId : productId // ignore: cast_nullable_to_non_nullable
@@ -80,7 +82,9 @@ as String?,addedBy: null == addedBy ? _self.addedBy : addedBy // ignore: cast_nu
 as String,paymentStatus: null == paymentStatus ? _self.paymentStatus : paymentStatus // ignore: cast_nullable_to_non_nullable
 as PaymentStatus,supplierName: freezed == supplierName ? _self.supplierName : supplierName // ignore: cast_nullable_to_non_nullable
 as String?,supplierContact: freezed == supplierContact ? _self.supplierContact : supplierContact // ignore: cast_nullable_to_non_nullable
-as String?,totalCost: freezed == totalCost ? _self.totalCost : totalCost // ignore: cast_nullable_to_non_nullable
+as String?,remainingQuantity: freezed == remainingQuantity ? _self.remainingQuantity : remainingQuantity // ignore: cast_nullable_to_non_nullable
+as int?,unitCost: freezed == unitCost ? _self.unitCost : unitCost // ignore: cast_nullable_to_non_nullable
+as double?,totalCost: freezed == totalCost ? _self.totalCost : totalCost // ignore: cast_nullable_to_non_nullable
 as double?,paidAmount: freezed == paidAmount ? _self.paidAmount : paidAmount // ignore: cast_nullable_to_non_nullable
 as double?,paymentDueDate: freezed == paymentDueDate ? _self.paymentDueDate : paymentDueDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,paidAt: freezed == paidAt ? _self.paidAt : paidAt // ignore: cast_nullable_to_non_nullable
@@ -208,10 +212,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String productId,  String locationId,  int quantity,  String? batchNumber,  DateTime? expirationDate,  DateTime receivedDate,  String? notes,  String addedBy,  PaymentStatus paymentStatus,  String? supplierName,  String? supplierContact,  double? totalCost,  double? paidAmount,  DateTime? paymentDueDate,  DateTime? paidAt,  EntryProduct? product,  Location? location,  EntryUser? user)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String productId,  String locationId,  int quantity,  String? batchNumber,  DateTime? expirationDate,  DateTime receivedDate,  String? notes,  String addedBy,  PaymentStatus paymentStatus,  String? supplierName,  String? supplierContact,  int? remainingQuantity,  double? unitCost,  double? totalCost,  double? paidAmount,  DateTime? paymentDueDate,  DateTime? paidAt,  EntryProduct? product,  Location? location,  EntryUser? user)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _InventoryEntry() when $default != null:
-return $default(_that.id,_that.productId,_that.locationId,_that.quantity,_that.batchNumber,_that.expirationDate,_that.receivedDate,_that.notes,_that.addedBy,_that.paymentStatus,_that.supplierName,_that.supplierContact,_that.totalCost,_that.paidAmount,_that.paymentDueDate,_that.paidAt,_that.product,_that.location,_that.user);case _:
+return $default(_that.id,_that.productId,_that.locationId,_that.quantity,_that.batchNumber,_that.expirationDate,_that.receivedDate,_that.notes,_that.addedBy,_that.paymentStatus,_that.supplierName,_that.supplierContact,_that.remainingQuantity,_that.unitCost,_that.totalCost,_that.paidAmount,_that.paymentDueDate,_that.paidAt,_that.product,_that.location,_that.user);case _:
   return orElse();
 
 }
@@ -229,10 +233,10 @@ return $default(_that.id,_that.productId,_that.locationId,_that.quantity,_that.b
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String productId,  String locationId,  int quantity,  String? batchNumber,  DateTime? expirationDate,  DateTime receivedDate,  String? notes,  String addedBy,  PaymentStatus paymentStatus,  String? supplierName,  String? supplierContact,  double? totalCost,  double? paidAmount,  DateTime? paymentDueDate,  DateTime? paidAt,  EntryProduct? product,  Location? location,  EntryUser? user)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String productId,  String locationId,  int quantity,  String? batchNumber,  DateTime? expirationDate,  DateTime receivedDate,  String? notes,  String addedBy,  PaymentStatus paymentStatus,  String? supplierName,  String? supplierContact,  int? remainingQuantity,  double? unitCost,  double? totalCost,  double? paidAmount,  DateTime? paymentDueDate,  DateTime? paidAt,  EntryProduct? product,  Location? location,  EntryUser? user)  $default,) {final _that = this;
 switch (_that) {
 case _InventoryEntry():
-return $default(_that.id,_that.productId,_that.locationId,_that.quantity,_that.batchNumber,_that.expirationDate,_that.receivedDate,_that.notes,_that.addedBy,_that.paymentStatus,_that.supplierName,_that.supplierContact,_that.totalCost,_that.paidAmount,_that.paymentDueDate,_that.paidAt,_that.product,_that.location,_that.user);case _:
+return $default(_that.id,_that.productId,_that.locationId,_that.quantity,_that.batchNumber,_that.expirationDate,_that.receivedDate,_that.notes,_that.addedBy,_that.paymentStatus,_that.supplierName,_that.supplierContact,_that.remainingQuantity,_that.unitCost,_that.totalCost,_that.paidAmount,_that.paymentDueDate,_that.paidAt,_that.product,_that.location,_that.user);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -249,10 +253,10 @@ return $default(_that.id,_that.productId,_that.locationId,_that.quantity,_that.b
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String productId,  String locationId,  int quantity,  String? batchNumber,  DateTime? expirationDate,  DateTime receivedDate,  String? notes,  String addedBy,  PaymentStatus paymentStatus,  String? supplierName,  String? supplierContact,  double? totalCost,  double? paidAmount,  DateTime? paymentDueDate,  DateTime? paidAt,  EntryProduct? product,  Location? location,  EntryUser? user)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String productId,  String locationId,  int quantity,  String? batchNumber,  DateTime? expirationDate,  DateTime receivedDate,  String? notes,  String addedBy,  PaymentStatus paymentStatus,  String? supplierName,  String? supplierContact,  int? remainingQuantity,  double? unitCost,  double? totalCost,  double? paidAmount,  DateTime? paymentDueDate,  DateTime? paidAt,  EntryProduct? product,  Location? location,  EntryUser? user)?  $default,) {final _that = this;
 switch (_that) {
 case _InventoryEntry() when $default != null:
-return $default(_that.id,_that.productId,_that.locationId,_that.quantity,_that.batchNumber,_that.expirationDate,_that.receivedDate,_that.notes,_that.addedBy,_that.paymentStatus,_that.supplierName,_that.supplierContact,_that.totalCost,_that.paidAmount,_that.paymentDueDate,_that.paidAt,_that.product,_that.location,_that.user);case _:
+return $default(_that.id,_that.productId,_that.locationId,_that.quantity,_that.batchNumber,_that.expirationDate,_that.receivedDate,_that.notes,_that.addedBy,_that.paymentStatus,_that.supplierName,_that.supplierContact,_that.remainingQuantity,_that.unitCost,_that.totalCost,_that.paidAmount,_that.paymentDueDate,_that.paidAt,_that.product,_that.location,_that.user);case _:
   return null;
 
 }
@@ -264,7 +268,7 @@ return $default(_that.id,_that.productId,_that.locationId,_that.quantity,_that.b
 @JsonSerializable()
 
 class _InventoryEntry implements InventoryEntry {
-  const _InventoryEntry({required this.id, required this.productId, required this.locationId, required this.quantity, this.batchNumber, this.expirationDate, required this.receivedDate, this.notes, required this.addedBy, this.paymentStatus = PaymentStatus.paid, this.supplierName, this.supplierContact, this.totalCost, this.paidAmount, this.paymentDueDate, this.paidAt, this.product, this.location, this.user});
+  const _InventoryEntry({required this.id, required this.productId, required this.locationId, required this.quantity, this.batchNumber, this.expirationDate, required this.receivedDate, this.notes, required this.addedBy, this.paymentStatus = PaymentStatus.paid, this.supplierName, this.supplierContact, this.remainingQuantity, this.unitCost, this.totalCost, this.paidAmount, this.paymentDueDate, this.paidAt, this.product, this.location, this.user});
   factory _InventoryEntry.fromJson(Map<String, dynamic> json) => _$InventoryEntryFromJson(json);
 
 @override final  String id;
@@ -279,6 +283,10 @@ class _InventoryEntry implements InventoryEntry {
 @override@JsonKey() final  PaymentStatus paymentStatus;
 @override final  String? supplierName;
 @override final  String? supplierContact;
+/// Unsold units in this batch (FIFO).
+@override final  int? remainingQuantity;
+/// Unit cost frozen at receipt.
+@override final  double? unitCost;
 @override final  double? totalCost;
 @override final  double? paidAmount;
 @override final  DateTime? paymentDueDate;
@@ -301,16 +309,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InventoryEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.locationId, locationId) || other.locationId == locationId)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.batchNumber, batchNumber) || other.batchNumber == batchNumber)&&(identical(other.expirationDate, expirationDate) || other.expirationDate == expirationDate)&&(identical(other.receivedDate, receivedDate) || other.receivedDate == receivedDate)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.addedBy, addedBy) || other.addedBy == addedBy)&&(identical(other.paymentStatus, paymentStatus) || other.paymentStatus == paymentStatus)&&(identical(other.supplierName, supplierName) || other.supplierName == supplierName)&&(identical(other.supplierContact, supplierContact) || other.supplierContact == supplierContact)&&(identical(other.totalCost, totalCost) || other.totalCost == totalCost)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.paymentDueDate, paymentDueDate) || other.paymentDueDate == paymentDueDate)&&(identical(other.paidAt, paidAt) || other.paidAt == paidAt)&&(identical(other.product, product) || other.product == product)&&(identical(other.location, location) || other.location == location)&&(identical(other.user, user) || other.user == user));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InventoryEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.locationId, locationId) || other.locationId == locationId)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.batchNumber, batchNumber) || other.batchNumber == batchNumber)&&(identical(other.expirationDate, expirationDate) || other.expirationDate == expirationDate)&&(identical(other.receivedDate, receivedDate) || other.receivedDate == receivedDate)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.addedBy, addedBy) || other.addedBy == addedBy)&&(identical(other.paymentStatus, paymentStatus) || other.paymentStatus == paymentStatus)&&(identical(other.supplierName, supplierName) || other.supplierName == supplierName)&&(identical(other.supplierContact, supplierContact) || other.supplierContact == supplierContact)&&(identical(other.remainingQuantity, remainingQuantity) || other.remainingQuantity == remainingQuantity)&&(identical(other.unitCost, unitCost) || other.unitCost == unitCost)&&(identical(other.totalCost, totalCost) || other.totalCost == totalCost)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.paymentDueDate, paymentDueDate) || other.paymentDueDate == paymentDueDate)&&(identical(other.paidAt, paidAt) || other.paidAt == paidAt)&&(identical(other.product, product) || other.product == product)&&(identical(other.location, location) || other.location == location)&&(identical(other.user, user) || other.user == user));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,productId,locationId,quantity,batchNumber,expirationDate,receivedDate,notes,addedBy,paymentStatus,supplierName,supplierContact,totalCost,paidAmount,paymentDueDate,paidAt,product,location,user]);
+int get hashCode => Object.hashAll([runtimeType,id,productId,locationId,quantity,batchNumber,expirationDate,receivedDate,notes,addedBy,paymentStatus,supplierName,supplierContact,remainingQuantity,unitCost,totalCost,paidAmount,paymentDueDate,paidAt,product,location,user]);
 
 @override
 String toString() {
-  return 'InventoryEntry(id: $id, productId: $productId, locationId: $locationId, quantity: $quantity, batchNumber: $batchNumber, expirationDate: $expirationDate, receivedDate: $receivedDate, notes: $notes, addedBy: $addedBy, paymentStatus: $paymentStatus, supplierName: $supplierName, supplierContact: $supplierContact, totalCost: $totalCost, paidAmount: $paidAmount, paymentDueDate: $paymentDueDate, paidAt: $paidAt, product: $product, location: $location, user: $user)';
+  return 'InventoryEntry(id: $id, productId: $productId, locationId: $locationId, quantity: $quantity, batchNumber: $batchNumber, expirationDate: $expirationDate, receivedDate: $receivedDate, notes: $notes, addedBy: $addedBy, paymentStatus: $paymentStatus, supplierName: $supplierName, supplierContact: $supplierContact, remainingQuantity: $remainingQuantity, unitCost: $unitCost, totalCost: $totalCost, paidAmount: $paidAmount, paymentDueDate: $paymentDueDate, paidAt: $paidAt, product: $product, location: $location, user: $user)';
 }
 
 
@@ -321,7 +329,7 @@ abstract mixin class _$InventoryEntryCopyWith<$Res> implements $InventoryEntryCo
   factory _$InventoryEntryCopyWith(_InventoryEntry value, $Res Function(_InventoryEntry) _then) = __$InventoryEntryCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String productId, String locationId, int quantity, String? batchNumber, DateTime? expirationDate, DateTime receivedDate, String? notes, String addedBy, PaymentStatus paymentStatus, String? supplierName, String? supplierContact, double? totalCost, double? paidAmount, DateTime? paymentDueDate, DateTime? paidAt, EntryProduct? product, Location? location, EntryUser? user
+ String id, String productId, String locationId, int quantity, String? batchNumber, DateTime? expirationDate, DateTime receivedDate, String? notes, String addedBy, PaymentStatus paymentStatus, String? supplierName, String? supplierContact, int? remainingQuantity, double? unitCost, double? totalCost, double? paidAmount, DateTime? paymentDueDate, DateTime? paidAt, EntryProduct? product, Location? location, EntryUser? user
 });
 
 
@@ -338,7 +346,7 @@ class __$InventoryEntryCopyWithImpl<$Res>
 
 /// Create a copy of InventoryEntry
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? productId = null,Object? locationId = null,Object? quantity = null,Object? batchNumber = freezed,Object? expirationDate = freezed,Object? receivedDate = null,Object? notes = freezed,Object? addedBy = null,Object? paymentStatus = null,Object? supplierName = freezed,Object? supplierContact = freezed,Object? totalCost = freezed,Object? paidAmount = freezed,Object? paymentDueDate = freezed,Object? paidAt = freezed,Object? product = freezed,Object? location = freezed,Object? user = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? productId = null,Object? locationId = null,Object? quantity = null,Object? batchNumber = freezed,Object? expirationDate = freezed,Object? receivedDate = null,Object? notes = freezed,Object? addedBy = null,Object? paymentStatus = null,Object? supplierName = freezed,Object? supplierContact = freezed,Object? remainingQuantity = freezed,Object? unitCost = freezed,Object? totalCost = freezed,Object? paidAmount = freezed,Object? paymentDueDate = freezed,Object? paidAt = freezed,Object? product = freezed,Object? location = freezed,Object? user = freezed,}) {
   return _then(_InventoryEntry(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,productId: null == productId ? _self.productId : productId // ignore: cast_nullable_to_non_nullable
@@ -352,7 +360,9 @@ as String?,addedBy: null == addedBy ? _self.addedBy : addedBy // ignore: cast_nu
 as String,paymentStatus: null == paymentStatus ? _self.paymentStatus : paymentStatus // ignore: cast_nullable_to_non_nullable
 as PaymentStatus,supplierName: freezed == supplierName ? _self.supplierName : supplierName // ignore: cast_nullable_to_non_nullable
 as String?,supplierContact: freezed == supplierContact ? _self.supplierContact : supplierContact // ignore: cast_nullable_to_non_nullable
-as String?,totalCost: freezed == totalCost ? _self.totalCost : totalCost // ignore: cast_nullable_to_non_nullable
+as String?,remainingQuantity: freezed == remainingQuantity ? _self.remainingQuantity : remainingQuantity // ignore: cast_nullable_to_non_nullable
+as int?,unitCost: freezed == unitCost ? _self.unitCost : unitCost // ignore: cast_nullable_to_non_nullable
+as double?,totalCost: freezed == totalCost ? _self.totalCost : totalCost // ignore: cast_nullable_to_non_nullable
 as double?,paidAmount: freezed == paidAmount ? _self.paidAmount : paidAmount // ignore: cast_nullable_to_non_nullable
 as double?,paymentDueDate: freezed == paymentDueDate ? _self.paymentDueDate : paymentDueDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,paidAt: freezed == paidAt ? _self.paidAt : paidAt // ignore: cast_nullable_to_non_nullable

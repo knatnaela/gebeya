@@ -16,6 +16,7 @@ router.use(checkSubscriptionStatus); // Block access if subscription is expired
 router.post('/', salesController.createSale.bind(salesController));
 router.get('/', salesController.getSales.bind(salesController));
 router.get('/analytics', salesController.getSalesAnalytics.bind(salesController));
+router.post('/:id/void', salesController.voidSale.bind(salesController));
 router.get('/:id', salesController.getSaleById.bind(salesController));
 
 export default router;

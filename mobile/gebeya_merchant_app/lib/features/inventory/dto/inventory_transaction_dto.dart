@@ -140,6 +140,9 @@ class LocationDto {
     required this.merchantId,
     required this.name,
     this.address,
+    this.phoneCountryIso,
+    this.phoneDialCode,
+    this.phoneNationalNumber,
     this.phone,
     this.isActive = true,
     this.isDefault = false,
@@ -151,6 +154,9 @@ class LocationDto {
   final String merchantId;
   final String name;
   final String? address;
+  final String? phoneCountryIso;
+  final String? phoneDialCode;
+  final String? phoneNationalNumber;
   final String? phone;
   final bool isActive;
   final bool isDefault;
@@ -167,6 +173,9 @@ class LocationDto {
       merchantId: merchantId,
       name: name,
       address: address,
+      phoneCountryIso: phoneCountryIso,
+      phoneDialCode: phoneDialCode,
+      phoneNationalNumber: phoneNationalNumber,
       phone: phone,
       isActive: isActive,
       isDefault: isDefault,

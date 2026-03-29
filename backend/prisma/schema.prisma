@@ -99,6 +99,13 @@ model locations {
   merchantId             String
   name                   String
   address                String?
+  /// ISO 3166-1 alpha-2 (e.g. ET).
+  phoneCountryIso        String?
+  /// E.164 country calling code with leading + (e.g. +251).
+  phoneDialCode          String?
+  /// National significant number, digits only.
+  phoneNationalNumber    String?
+  /// Full E.164 number.
   phone                  String?
   isActive               Boolean                  @default(true)
   isDefault              Boolean                  @default(false)
@@ -107,6 +114,7 @@ model locations {
   merchants              merchants                @relation(fields: [merchantId], references: [id], onDelete: Cascade)
   inventory              inventory[]
   inventory_transactions inventory_transactions[]
+  sales                  sales[]
 
   @@unique([merchantId, name])
   @@index([merchantId])
@@ -132,9 +140,14 @@ model inventory {
   paidAmount     Decimal?        @db.Decimal(10, 2)
   paymentDueDate DateTime?
   paidAt         DateTime?
+  /// Frozen unit cost at receipt (totalCost / quantity or product cost at add time).
+  unitCost       Decimal?        @db.Decimal(10, 2)
+  /// Unsold units in this batch; source of truth for on-hand stock per batch.
+  remainingQuantity Int          @default(0)
   products       products        @relation(fields: [productId], references: [id], onDelete: Cascade)
   locations      locations       @relation(fields: [locationId], references: [id], onDelete: Cascade)
   users          users           @relation(fields: [addedBy], references: [id])
+  sale_item_consumptions SaleItemConsumption[]
 
   @@index([productId])
   @@index([locationId])
@@ -149,6 +162,13 @@ model merchants {
   id                     String                   @id
   name                   String
   email                  String                   @unique
+  /// ISO 3166-1 alpha-2 (e.g. ET).
+  phoneCountryIso        String?
+  /// E.164 country calling code with leading + (e.g. +251).
+  phoneDialCode          String?
+  /// National significant number, digits only.
+  phoneNationalNumber    String?
+  /// Full E.164 number.
   phone                  String?
   address                String?
   /// ISO 4217 code (e.g. ETB, USD). Display only; amounts are stored as decimals.
@@ -194,6 +214,8 @@ model platform_settings {
   defaultTrialPeriodDays    Int      @default(30)
   defaultTransactionFeeRate Decimal  @default(5.00) @db.Decimal(5, 2)
   globalFeatureFlags        Json     @default("{}")
+  /// ISO 3166-1 alpha-2 codes (e.g. ET, NG). Login/register default to phone-first UX when user locale region matches.
+  phoneFirstCountryIsoCodes String[] @default([])
   createdAt                 DateTime @default(now())
   updatedAt                 DateTime
 }
@@ -266,11 +288,32 @@ model sale_items {
   totalPrice   Decimal  @db.Decimal(10, 2)
   createdAt    DateTime @default(now())
   defaultPrice Decimal  @db.Decimal(10, 2)
+  /// FIFO line COGS at sale time; null for sales before FIFO migration.
+  cogsAmount   Decimal? @db.Decimal(10, 2)
   products     products @relation(fields: [productId], references: [id])
   sales        sales    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  sale_item_consumptions SaleItemConsumption[]
 
   @@index([productId])
   @@index([saleId])
+}
+
+model SaleItemConsumption {
+  id          String     @id
+  saleItemId  String
+  inventoryId String
+  quantity    Int
+  unitCost    Decimal    @db.Decimal(10, 2)
+  totalCost   Decimal    @db.Decimal(10, 2)
+  createdAt   DateTime   @default(now())
+  /// Set when void/return puts units back into this batch.
+  reversedAt  DateTime?
+  sale_items  sale_items @relation(fields: [saleItemId], references: [id], onDelete: Cascade)
+  inventory   inventory  @relation(fields: [inventoryId], references: [id])
+
+  @@index([saleItemId])
+  @@index([inventoryId])
+  @@map("sale_item_consumption")
 }
 
 model sales {
@@ -283,16 +326,34 @@ model sales {
   updatedAt     DateTime
   platformFee   Decimal      @default(0) @db.Decimal(10, 2)
   customerName  String?
-  customerPhone String?
+  /// ISO 3166-1 alpha-2 (e.g. ET).
+  customerPhoneCountryIso     String?
+  /// E.164 country calling code with leading + (e.g. +251).
+  customerPhoneDialCode       String?
+  /// National significant number, digits only.
+  customerPhoneNationalNumber String?
+  /// Full E.164 number.
+  customerPhone               String?
   saleDate      DateTime     @default(now())
+  /// Store where FIFO was applied (audit / multi-location reporting).
+  locationId    String?
+  status        SaleStatus   @default(COMPLETED)
+  voidedAt      DateTime?
+  voidReason    String?
+  voidedByUserId String?
   sale_items    sale_items[]
   merchants     merchants    @relation(fields: [merchantId], references: [id])
-  users         users        @relation(fields: [userId], references: [id])
+  users         users        @relation("SaleCreatedBy", fields: [userId], references: [id])
+  locations     locations?   @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  voidedBy      users?       @relation("SaleVoidedBy", fields: [voidedByUserId], references: [id], onDelete: SetNull)
 
   @@index([createdAt])
   @@index([merchantId])
   @@index([saleDate])
   @@index([merchantId, saleDate])
+  @@index([locationId])
+  @@index([merchantId, locationId])
+  @@index([status])
 }
 
 model expenses {
@@ -379,14 +440,54 @@ model users {
   requiresPasswordChange     Boolean                  @default(false)
   temporaryPassword          String?
   temporaryPasswordExpiresAt DateTime?
+  /// ISO 3166-1 alpha-2 (e.g. ET).
+  phoneCountryIso            String?
+  /// E.164 country calling code with leading + (e.g. +251).
+  phoneDialCode              String?
+  /// National significant number, digits only.
+  phoneNationalNumber        String?
+  /// Full E.164 number; unique when set (multiple nulls allowed).
+  phone                      String?                  @unique
   audit_logs                 audit_logs[]
   inventory_transactions     inventory_transactions[]
   inventory                  inventory[]
-  sales                      sales[]
+  salesCreated               sales[]                   @relation("SaleCreatedBy")
+  salesVoided                sales[]                   @relation("SaleVoidedBy")
   expenses                   expenses[]
   user_role_assignments      user_role_assignments[]
+  password_reset_tokens      password_reset_tokens[]
   companies                  companies?               @relation(fields: [companyId], references: [id])
   merchants                  merchants?               @relation(fields: [merchantId], references: [id])
+  telegram_gateway_verification_sessions telegram_gateway_verification_sessions[]
+}
+
+model telegram_gateway_verification_sessions {
+  id        String    @id
+  userId    String
+  /// Telegram Gateway request_id
+  requestId String    @unique
+  phone     String
+  expiresAt DateTime
+  consumedAt DateTime?
+  createdAt DateTime  @default(now())
+  users     users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("telegram_gateway_verification_sessions")
+}
+
+model password_reset_tokens {
+  id        String    @id
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  users     users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 enum AuditAction {
@@ -395,6 +496,11 @@ enum AuditAction {
   DELETE
   LOGIN
   LOGOUT
+}
+
+enum SaleStatus {
+  COMPLETED
+  VOIDED
 }
 
 enum InventoryTransactionType {

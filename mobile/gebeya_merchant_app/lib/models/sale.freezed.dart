@@ -567,7 +567,8 @@ as num,
 /// @nodoc
 mixin _$Sale {
 
- String get id; DateTime get saleDate; DateTime get createdAt; num get totalAmount; num? get platformFee; String? get customerName; String? get customerPhone; String? get notes; num get netIncome; num get profitMargin; num get costOfGoodsSold; List<SaleLineItem> get items; SaleSeller? get seller; String? get merchantName;
+ String get id; DateTime get saleDate; DateTime get createdAt; num get totalAmount; num? get platformFee; String? get customerName; String? get customerPhoneCountryIso; String? get customerPhoneDialCode; String? get customerPhoneNationalNumber; String? get customerPhone; String? get notes;/// COMPLETED or VOIDED
+ String get status; String? get locationName; DateTime? get voidedAt; String? get voidReason; num get netIncome; num get profitMargin; num get costOfGoodsSold; List<SaleLineItem> get items; SaleSeller? get seller; String? get merchantName;
 /// Create a copy of Sale
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -578,16 +579,16 @@ $SaleCopyWith<Sale> get copyWith => _$SaleCopyWithImpl<Sale>(this as Sale, _$ide
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Sale&&(identical(other.id, id) || other.id == id)&&(identical(other.saleDate, saleDate) || other.saleDate == saleDate)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.totalAmount, totalAmount) || other.totalAmount == totalAmount)&&(identical(other.platformFee, platformFee) || other.platformFee == platformFee)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.customerPhone, customerPhone) || other.customerPhone == customerPhone)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.netIncome, netIncome) || other.netIncome == netIncome)&&(identical(other.profitMargin, profitMargin) || other.profitMargin == profitMargin)&&(identical(other.costOfGoodsSold, costOfGoodsSold) || other.costOfGoodsSold == costOfGoodsSold)&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.seller, seller) || other.seller == seller)&&(identical(other.merchantName, merchantName) || other.merchantName == merchantName));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Sale&&(identical(other.id, id) || other.id == id)&&(identical(other.saleDate, saleDate) || other.saleDate == saleDate)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.totalAmount, totalAmount) || other.totalAmount == totalAmount)&&(identical(other.platformFee, platformFee) || other.platformFee == platformFee)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.customerPhoneCountryIso, customerPhoneCountryIso) || other.customerPhoneCountryIso == customerPhoneCountryIso)&&(identical(other.customerPhoneDialCode, customerPhoneDialCode) || other.customerPhoneDialCode == customerPhoneDialCode)&&(identical(other.customerPhoneNationalNumber, customerPhoneNationalNumber) || other.customerPhoneNationalNumber == customerPhoneNationalNumber)&&(identical(other.customerPhone, customerPhone) || other.customerPhone == customerPhone)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.status, status) || other.status == status)&&(identical(other.locationName, locationName) || other.locationName == locationName)&&(identical(other.voidedAt, voidedAt) || other.voidedAt == voidedAt)&&(identical(other.voidReason, voidReason) || other.voidReason == voidReason)&&(identical(other.netIncome, netIncome) || other.netIncome == netIncome)&&(identical(other.profitMargin, profitMargin) || other.profitMargin == profitMargin)&&(identical(other.costOfGoodsSold, costOfGoodsSold) || other.costOfGoodsSold == costOfGoodsSold)&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.seller, seller) || other.seller == seller)&&(identical(other.merchantName, merchantName) || other.merchantName == merchantName));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,saleDate,createdAt,totalAmount,platformFee,customerName,customerPhone,notes,netIncome,profitMargin,costOfGoodsSold,const DeepCollectionEquality().hash(items),seller,merchantName);
+int get hashCode => Object.hashAll([runtimeType,id,saleDate,createdAt,totalAmount,platformFee,customerName,customerPhoneCountryIso,customerPhoneDialCode,customerPhoneNationalNumber,customerPhone,notes,status,locationName,voidedAt,voidReason,netIncome,profitMargin,costOfGoodsSold,const DeepCollectionEquality().hash(items),seller,merchantName]);
 
 @override
 String toString() {
-  return 'Sale(id: $id, saleDate: $saleDate, createdAt: $createdAt, totalAmount: $totalAmount, platformFee: $platformFee, customerName: $customerName, customerPhone: $customerPhone, notes: $notes, netIncome: $netIncome, profitMargin: $profitMargin, costOfGoodsSold: $costOfGoodsSold, items: $items, seller: $seller, merchantName: $merchantName)';
+  return 'Sale(id: $id, saleDate: $saleDate, createdAt: $createdAt, totalAmount: $totalAmount, platformFee: $platformFee, customerName: $customerName, customerPhoneCountryIso: $customerPhoneCountryIso, customerPhoneDialCode: $customerPhoneDialCode, customerPhoneNationalNumber: $customerPhoneNationalNumber, customerPhone: $customerPhone, notes: $notes, status: $status, locationName: $locationName, voidedAt: $voidedAt, voidReason: $voidReason, netIncome: $netIncome, profitMargin: $profitMargin, costOfGoodsSold: $costOfGoodsSold, items: $items, seller: $seller, merchantName: $merchantName)';
 }
 
 
@@ -598,7 +599,7 @@ abstract mixin class $SaleCopyWith<$Res>  {
   factory $SaleCopyWith(Sale value, $Res Function(Sale) _then) = _$SaleCopyWithImpl;
 @useResult
 $Res call({
- String id, DateTime saleDate, DateTime createdAt, num totalAmount, num? platformFee, String? customerName, String? customerPhone, String? notes, num netIncome, num profitMargin, num costOfGoodsSold, List<SaleLineItem> items, SaleSeller? seller, String? merchantName
+ String id, DateTime saleDate, DateTime createdAt, num totalAmount, num? platformFee, String? customerName, String? customerPhoneCountryIso, String? customerPhoneDialCode, String? customerPhoneNationalNumber, String? customerPhone, String? notes, String status, String? locationName, DateTime? voidedAt, String? voidReason, num netIncome, num profitMargin, num costOfGoodsSold, List<SaleLineItem> items, SaleSeller? seller, String? merchantName
 });
 
 
@@ -615,7 +616,7 @@ class _$SaleCopyWithImpl<$Res>
 
 /// Create a copy of Sale
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? saleDate = null,Object? createdAt = null,Object? totalAmount = null,Object? platformFee = freezed,Object? customerName = freezed,Object? customerPhone = freezed,Object? notes = freezed,Object? netIncome = null,Object? profitMargin = null,Object? costOfGoodsSold = null,Object? items = null,Object? seller = freezed,Object? merchantName = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? saleDate = null,Object? createdAt = null,Object? totalAmount = null,Object? platformFee = freezed,Object? customerName = freezed,Object? customerPhoneCountryIso = freezed,Object? customerPhoneDialCode = freezed,Object? customerPhoneNationalNumber = freezed,Object? customerPhone = freezed,Object? notes = freezed,Object? status = null,Object? locationName = freezed,Object? voidedAt = freezed,Object? voidReason = freezed,Object? netIncome = null,Object? profitMargin = null,Object? costOfGoodsSold = null,Object? items = null,Object? seller = freezed,Object? merchantName = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,saleDate: null == saleDate ? _self.saleDate : saleDate // ignore: cast_nullable_to_non_nullable
@@ -623,8 +624,15 @@ as DateTime,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore
 as DateTime,totalAmount: null == totalAmount ? _self.totalAmount : totalAmount // ignore: cast_nullable_to_non_nullable
 as num,platformFee: freezed == platformFee ? _self.platformFee : platformFee // ignore: cast_nullable_to_non_nullable
 as num?,customerName: freezed == customerName ? _self.customerName : customerName // ignore: cast_nullable_to_non_nullable
+as String?,customerPhoneCountryIso: freezed == customerPhoneCountryIso ? _self.customerPhoneCountryIso : customerPhoneCountryIso // ignore: cast_nullable_to_non_nullable
+as String?,customerPhoneDialCode: freezed == customerPhoneDialCode ? _self.customerPhoneDialCode : customerPhoneDialCode // ignore: cast_nullable_to_non_nullable
+as String?,customerPhoneNationalNumber: freezed == customerPhoneNationalNumber ? _self.customerPhoneNationalNumber : customerPhoneNationalNumber // ignore: cast_nullable_to_non_nullable
 as String?,customerPhone: freezed == customerPhone ? _self.customerPhone : customerPhone // ignore: cast_nullable_to_non_nullable
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
+as String?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String,locationName: freezed == locationName ? _self.locationName : locationName // ignore: cast_nullable_to_non_nullable
+as String?,voidedAt: freezed == voidedAt ? _self.voidedAt : voidedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,voidReason: freezed == voidReason ? _self.voidReason : voidReason // ignore: cast_nullable_to_non_nullable
 as String?,netIncome: null == netIncome ? _self.netIncome : netIncome // ignore: cast_nullable_to_non_nullable
 as num,profitMargin: null == profitMargin ? _self.profitMargin : profitMargin // ignore: cast_nullable_to_non_nullable
 as num,costOfGoodsSold: null == costOfGoodsSold ? _self.costOfGoodsSold : costOfGoodsSold // ignore: cast_nullable_to_non_nullable
@@ -728,10 +736,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  DateTime saleDate,  DateTime createdAt,  num totalAmount,  num? platformFee,  String? customerName,  String? customerPhone,  String? notes,  num netIncome,  num profitMargin,  num costOfGoodsSold,  List<SaleLineItem> items,  SaleSeller? seller,  String? merchantName)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  DateTime saleDate,  DateTime createdAt,  num totalAmount,  num? platformFee,  String? customerName,  String? customerPhoneCountryIso,  String? customerPhoneDialCode,  String? customerPhoneNationalNumber,  String? customerPhone,  String? notes,  String status,  String? locationName,  DateTime? voidedAt,  String? voidReason,  num netIncome,  num profitMargin,  num costOfGoodsSold,  List<SaleLineItem> items,  SaleSeller? seller,  String? merchantName)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Sale() when $default != null:
-return $default(_that.id,_that.saleDate,_that.createdAt,_that.totalAmount,_that.platformFee,_that.customerName,_that.customerPhone,_that.notes,_that.netIncome,_that.profitMargin,_that.costOfGoodsSold,_that.items,_that.seller,_that.merchantName);case _:
+return $default(_that.id,_that.saleDate,_that.createdAt,_that.totalAmount,_that.platformFee,_that.customerName,_that.customerPhoneCountryIso,_that.customerPhoneDialCode,_that.customerPhoneNationalNumber,_that.customerPhone,_that.notes,_that.status,_that.locationName,_that.voidedAt,_that.voidReason,_that.netIncome,_that.profitMargin,_that.costOfGoodsSold,_that.items,_that.seller,_that.merchantName);case _:
   return orElse();
 
 }
@@ -749,10 +757,10 @@ return $default(_that.id,_that.saleDate,_that.createdAt,_that.totalAmount,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  DateTime saleDate,  DateTime createdAt,  num totalAmount,  num? platformFee,  String? customerName,  String? customerPhone,  String? notes,  num netIncome,  num profitMargin,  num costOfGoodsSold,  List<SaleLineItem> items,  SaleSeller? seller,  String? merchantName)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  DateTime saleDate,  DateTime createdAt,  num totalAmount,  num? platformFee,  String? customerName,  String? customerPhoneCountryIso,  String? customerPhoneDialCode,  String? customerPhoneNationalNumber,  String? customerPhone,  String? notes,  String status,  String? locationName,  DateTime? voidedAt,  String? voidReason,  num netIncome,  num profitMargin,  num costOfGoodsSold,  List<SaleLineItem> items,  SaleSeller? seller,  String? merchantName)  $default,) {final _that = this;
 switch (_that) {
 case _Sale():
-return $default(_that.id,_that.saleDate,_that.createdAt,_that.totalAmount,_that.platformFee,_that.customerName,_that.customerPhone,_that.notes,_that.netIncome,_that.profitMargin,_that.costOfGoodsSold,_that.items,_that.seller,_that.merchantName);case _:
+return $default(_that.id,_that.saleDate,_that.createdAt,_that.totalAmount,_that.platformFee,_that.customerName,_that.customerPhoneCountryIso,_that.customerPhoneDialCode,_that.customerPhoneNationalNumber,_that.customerPhone,_that.notes,_that.status,_that.locationName,_that.voidedAt,_that.voidReason,_that.netIncome,_that.profitMargin,_that.costOfGoodsSold,_that.items,_that.seller,_that.merchantName);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -769,10 +777,10 @@ return $default(_that.id,_that.saleDate,_that.createdAt,_that.totalAmount,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  DateTime saleDate,  DateTime createdAt,  num totalAmount,  num? platformFee,  String? customerName,  String? customerPhone,  String? notes,  num netIncome,  num profitMargin,  num costOfGoodsSold,  List<SaleLineItem> items,  SaleSeller? seller,  String? merchantName)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  DateTime saleDate,  DateTime createdAt,  num totalAmount,  num? platformFee,  String? customerName,  String? customerPhoneCountryIso,  String? customerPhoneDialCode,  String? customerPhoneNationalNumber,  String? customerPhone,  String? notes,  String status,  String? locationName,  DateTime? voidedAt,  String? voidReason,  num netIncome,  num profitMargin,  num costOfGoodsSold,  List<SaleLineItem> items,  SaleSeller? seller,  String? merchantName)?  $default,) {final _that = this;
 switch (_that) {
 case _Sale() when $default != null:
-return $default(_that.id,_that.saleDate,_that.createdAt,_that.totalAmount,_that.platformFee,_that.customerName,_that.customerPhone,_that.notes,_that.netIncome,_that.profitMargin,_that.costOfGoodsSold,_that.items,_that.seller,_that.merchantName);case _:
+return $default(_that.id,_that.saleDate,_that.createdAt,_that.totalAmount,_that.platformFee,_that.customerName,_that.customerPhoneCountryIso,_that.customerPhoneDialCode,_that.customerPhoneNationalNumber,_that.customerPhone,_that.notes,_that.status,_that.locationName,_that.voidedAt,_that.voidReason,_that.netIncome,_that.profitMargin,_that.costOfGoodsSold,_that.items,_that.seller,_that.merchantName);case _:
   return null;
 
 }
@@ -784,7 +792,7 @@ return $default(_that.id,_that.saleDate,_that.createdAt,_that.totalAmount,_that.
 
 
 class _Sale implements Sale {
-  const _Sale({required this.id, required this.saleDate, required this.createdAt, required this.totalAmount, this.platformFee, this.customerName, this.customerPhone, this.notes, required this.netIncome, required this.profitMargin, required this.costOfGoodsSold, final  List<SaleLineItem> items = const <SaleLineItem>[], this.seller, this.merchantName}): _items = items;
+  const _Sale({required this.id, required this.saleDate, required this.createdAt, required this.totalAmount, this.platformFee, this.customerName, this.customerPhoneCountryIso, this.customerPhoneDialCode, this.customerPhoneNationalNumber, this.customerPhone, this.notes, this.status = 'COMPLETED', this.locationName, this.voidedAt, this.voidReason, required this.netIncome, required this.profitMargin, required this.costOfGoodsSold, final  List<SaleLineItem> items = const <SaleLineItem>[], this.seller, this.merchantName}): _items = items;
   
 
 @override final  String id;
@@ -793,8 +801,16 @@ class _Sale implements Sale {
 @override final  num totalAmount;
 @override final  num? platformFee;
 @override final  String? customerName;
+@override final  String? customerPhoneCountryIso;
+@override final  String? customerPhoneDialCode;
+@override final  String? customerPhoneNationalNumber;
 @override final  String? customerPhone;
 @override final  String? notes;
+/// COMPLETED or VOIDED
+@override@JsonKey() final  String status;
+@override final  String? locationName;
+@override final  DateTime? voidedAt;
+@override final  String? voidReason;
 @override final  num netIncome;
 @override final  num profitMargin;
 @override final  num costOfGoodsSold;
@@ -818,16 +834,16 @@ _$SaleCopyWith<_Sale> get copyWith => __$SaleCopyWithImpl<_Sale>(this, _$identit
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Sale&&(identical(other.id, id) || other.id == id)&&(identical(other.saleDate, saleDate) || other.saleDate == saleDate)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.totalAmount, totalAmount) || other.totalAmount == totalAmount)&&(identical(other.platformFee, platformFee) || other.platformFee == platformFee)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.customerPhone, customerPhone) || other.customerPhone == customerPhone)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.netIncome, netIncome) || other.netIncome == netIncome)&&(identical(other.profitMargin, profitMargin) || other.profitMargin == profitMargin)&&(identical(other.costOfGoodsSold, costOfGoodsSold) || other.costOfGoodsSold == costOfGoodsSold)&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.seller, seller) || other.seller == seller)&&(identical(other.merchantName, merchantName) || other.merchantName == merchantName));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Sale&&(identical(other.id, id) || other.id == id)&&(identical(other.saleDate, saleDate) || other.saleDate == saleDate)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.totalAmount, totalAmount) || other.totalAmount == totalAmount)&&(identical(other.platformFee, platformFee) || other.platformFee == platformFee)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.customerPhoneCountryIso, customerPhoneCountryIso) || other.customerPhoneCountryIso == customerPhoneCountryIso)&&(identical(other.customerPhoneDialCode, customerPhoneDialCode) || other.customerPhoneDialCode == customerPhoneDialCode)&&(identical(other.customerPhoneNationalNumber, customerPhoneNationalNumber) || other.customerPhoneNationalNumber == customerPhoneNationalNumber)&&(identical(other.customerPhone, customerPhone) || other.customerPhone == customerPhone)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.status, status) || other.status == status)&&(identical(other.locationName, locationName) || other.locationName == locationName)&&(identical(other.voidedAt, voidedAt) || other.voidedAt == voidedAt)&&(identical(other.voidReason, voidReason) || other.voidReason == voidReason)&&(identical(other.netIncome, netIncome) || other.netIncome == netIncome)&&(identical(other.profitMargin, profitMargin) || other.profitMargin == profitMargin)&&(identical(other.costOfGoodsSold, costOfGoodsSold) || other.costOfGoodsSold == costOfGoodsSold)&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.seller, seller) || other.seller == seller)&&(identical(other.merchantName, merchantName) || other.merchantName == merchantName));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,saleDate,createdAt,totalAmount,platformFee,customerName,customerPhone,notes,netIncome,profitMargin,costOfGoodsSold,const DeepCollectionEquality().hash(_items),seller,merchantName);
+int get hashCode => Object.hashAll([runtimeType,id,saleDate,createdAt,totalAmount,platformFee,customerName,customerPhoneCountryIso,customerPhoneDialCode,customerPhoneNationalNumber,customerPhone,notes,status,locationName,voidedAt,voidReason,netIncome,profitMargin,costOfGoodsSold,const DeepCollectionEquality().hash(_items),seller,merchantName]);
 
 @override
 String toString() {
-  return 'Sale(id: $id, saleDate: $saleDate, createdAt: $createdAt, totalAmount: $totalAmount, platformFee: $platformFee, customerName: $customerName, customerPhone: $customerPhone, notes: $notes, netIncome: $netIncome, profitMargin: $profitMargin, costOfGoodsSold: $costOfGoodsSold, items: $items, seller: $seller, merchantName: $merchantName)';
+  return 'Sale(id: $id, saleDate: $saleDate, createdAt: $createdAt, totalAmount: $totalAmount, platformFee: $platformFee, customerName: $customerName, customerPhoneCountryIso: $customerPhoneCountryIso, customerPhoneDialCode: $customerPhoneDialCode, customerPhoneNationalNumber: $customerPhoneNationalNumber, customerPhone: $customerPhone, notes: $notes, status: $status, locationName: $locationName, voidedAt: $voidedAt, voidReason: $voidReason, netIncome: $netIncome, profitMargin: $profitMargin, costOfGoodsSold: $costOfGoodsSold, items: $items, seller: $seller, merchantName: $merchantName)';
 }
 
 
@@ -838,7 +854,7 @@ abstract mixin class _$SaleCopyWith<$Res> implements $SaleCopyWith<$Res> {
   factory _$SaleCopyWith(_Sale value, $Res Function(_Sale) _then) = __$SaleCopyWithImpl;
 @override @useResult
 $Res call({
- String id, DateTime saleDate, DateTime createdAt, num totalAmount, num? platformFee, String? customerName, String? customerPhone, String? notes, num netIncome, num profitMargin, num costOfGoodsSold, List<SaleLineItem> items, SaleSeller? seller, String? merchantName
+ String id, DateTime saleDate, DateTime createdAt, num totalAmount, num? platformFee, String? customerName, String? customerPhoneCountryIso, String? customerPhoneDialCode, String? customerPhoneNationalNumber, String? customerPhone, String? notes, String status, String? locationName, DateTime? voidedAt, String? voidReason, num netIncome, num profitMargin, num costOfGoodsSold, List<SaleLineItem> items, SaleSeller? seller, String? merchantName
 });
 
 
@@ -855,7 +871,7 @@ class __$SaleCopyWithImpl<$Res>
 
 /// Create a copy of Sale
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? saleDate = null,Object? createdAt = null,Object? totalAmount = null,Object? platformFee = freezed,Object? customerName = freezed,Object? customerPhone = freezed,Object? notes = freezed,Object? netIncome = null,Object? profitMargin = null,Object? costOfGoodsSold = null,Object? items = null,Object? seller = freezed,Object? merchantName = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? saleDate = null,Object? createdAt = null,Object? totalAmount = null,Object? platformFee = freezed,Object? customerName = freezed,Object? customerPhoneCountryIso = freezed,Object? customerPhoneDialCode = freezed,Object? customerPhoneNationalNumber = freezed,Object? customerPhone = freezed,Object? notes = freezed,Object? status = null,Object? locationName = freezed,Object? voidedAt = freezed,Object? voidReason = freezed,Object? netIncome = null,Object? profitMargin = null,Object? costOfGoodsSold = null,Object? items = null,Object? seller = freezed,Object? merchantName = freezed,}) {
   return _then(_Sale(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,saleDate: null == saleDate ? _self.saleDate : saleDate // ignore: cast_nullable_to_non_nullable
@@ -863,8 +879,15 @@ as DateTime,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore
 as DateTime,totalAmount: null == totalAmount ? _self.totalAmount : totalAmount // ignore: cast_nullable_to_non_nullable
 as num,platformFee: freezed == platformFee ? _self.platformFee : platformFee // ignore: cast_nullable_to_non_nullable
 as num?,customerName: freezed == customerName ? _self.customerName : customerName // ignore: cast_nullable_to_non_nullable
+as String?,customerPhoneCountryIso: freezed == customerPhoneCountryIso ? _self.customerPhoneCountryIso : customerPhoneCountryIso // ignore: cast_nullable_to_non_nullable
+as String?,customerPhoneDialCode: freezed == customerPhoneDialCode ? _self.customerPhoneDialCode : customerPhoneDialCode // ignore: cast_nullable_to_non_nullable
+as String?,customerPhoneNationalNumber: freezed == customerPhoneNationalNumber ? _self.customerPhoneNationalNumber : customerPhoneNationalNumber // ignore: cast_nullable_to_non_nullable
 as String?,customerPhone: freezed == customerPhone ? _self.customerPhone : customerPhone // ignore: cast_nullable_to_non_nullable
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
+as String?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String,locationName: freezed == locationName ? _self.locationName : locationName // ignore: cast_nullable_to_non_nullable
+as String?,voidedAt: freezed == voidedAt ? _self.voidedAt : voidedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,voidReason: freezed == voidReason ? _self.voidReason : voidReason // ignore: cast_nullable_to_non_nullable
 as String?,netIncome: null == netIncome ? _self.netIncome : netIncome // ignore: cast_nullable_to_non_nullable
 as num,profitMargin: null == profitMargin ? _self.profitMargin : profitMargin // ignore: cast_nullable_to_non_nullable
 as num,costOfGoodsSold: null == costOfGoodsSold ? _self.costOfGoodsSold : costOfGoodsSold // ignore: cast_nullable_to_non_nullable

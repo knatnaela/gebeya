@@ -14,7 +14,7 @@ import '../../../models/payment_status.dart';
 import '../../../models/product.dart';
 import '../../products/screens/product_picker_screen.dart';
 import '../dto/add_stock_dto.dart';
-import '../inventory_repository.dart';
+import '../../locations/locations_repository.dart';
 import '../stock_entries_controller.dart';
 
 class AddStockScreen extends ConsumerStatefulWidget {
@@ -68,8 +68,7 @@ class _AddStockScreenState extends ConsumerState<AddStockScreen> {
   Future<void> _loadDefaults() async {
     setState(() => _isLoadingDefaults = true);
     try {
-      final repo = ref.read(inventoryRepositoryProvider);
-      final defaultLoc = await repo.fetchDefaultLocation();
+      final defaultLoc = await ref.read(locationsRepositoryProvider).fetchDefaultLocation();
       setState(() {
         _defaultLocation = defaultLoc;
         _selectedLocation = defaultLoc;
@@ -91,8 +90,7 @@ class _AddStockScreenState extends ConsumerState<AddStockScreen> {
   }
 
   Future<void> _selectLocation() async {
-    final repo = ref.read(inventoryRepositoryProvider);
-    final locations = await repo.fetchLocations();
+    final locations = await ref.read(locationsRepositoryProvider).fetchLocations();
 
     if (!mounted) return;
 

@@ -6,12 +6,16 @@ import { z } from 'zod';
 const createLocationSchema = z.object({
   name: z.string().min(1, 'Location name is required'),
   address: z.string().optional(),
+  phoneCountryIso: z.string().length(2).optional(),
+  phoneNationalNumber: z.string().optional(),
   phone: z.string().optional(),
 });
 
 const updateLocationSchema = z.object({
   name: z.string().min(1, 'Location name is required').optional(),
   address: z.string().optional(),
+  phoneCountryIso: z.string().length(2).optional(),
+  phoneNationalNumber: z.string().optional(),
   phone: z.string().optional(),
   isActive: z.boolean().optional(),
 });

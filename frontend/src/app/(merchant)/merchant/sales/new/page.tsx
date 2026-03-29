@@ -36,6 +36,8 @@ import { toast } from 'sonner';
 import { formatCurrency, formatCurrencySmart } from '@/lib/currency';
 import { useMerchantCurrency } from '@/hooks/use-merchant-currency';
 import { ProductFormDialog, type ProductFormData } from '@/components/products/product-form-dialog';
+import { MerchantPhoneInput } from '@/components/merchant-phone-input';
+import { splitCustomerE164ForApi } from '@/lib/phone';
 
 interface SaleItem {
   productId: string;
@@ -57,7 +59,7 @@ export default function NewSalePage() {
   const [notes, setNotes] = useState('');
   const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]); // Default to today
   const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerPhoneE164, setCustomerPhoneE164] = useState<string | undefined>(undefined);
   const [selectedLocationId, setSelectedLocationId] = useState<string>('');
   const queryClient = useQueryClient();
 
@@ -80,7 +82,16 @@ export default function NewSalePage() {
   const defaultLocation = locations?.find((loc: any) => loc.isDefault);
 
   const createSaleMutation = useMutation({
-    mutationFn: async (data: { items: any[]; locationId?: string; notes?: string; saleDate?: string; customerName?: string; customerPhone?: string }) => {
+    mutationFn: async (data: {
+      items: any[];
+      locationId?: string;
+      notes?: string;
+      saleDate?: string;
+      customerName?: string;
+      customerPhoneCountryIso?: string;
+      customerPhoneNationalNumber?: string;
+      customerPhone?: string;
+    }) => {
       const res = await apiClient.post('/sales', data);
       return res.data;
     },
@@ -92,7 +103,7 @@ export default function NewSalePage() {
       setSaleItems([]);
       setNotes('');
       setCustomerName('');
-      setCustomerPhone('');
+      setCustomerPhoneE164(undefined);
       setSaleDate(new Date().toISOString().split('T')[0]);
       setSelectedLocationId('');
       setSelectedSale(data.data);
@@ -224,6 +235,7 @@ export default function NewSalePage() {
     }
 
     const locationId = selectedLocationId || defaultLocation?.id;
+    const customerPhonePayload = splitCustomerE164ForApi(customerPhoneE164);
     createSaleMutation.mutate({
       items: saleItems.map((item) => ({
         productId: item.productId,
@@ -234,7 +246,7 @@ export default function NewSalePage() {
       notes: notes || undefined,
       saleDate: saleDate || undefined,
       customerName: customerName || undefined,
-      customerPhone: customerPhone || undefined,
+      ...(customerPhonePayload ?? {}),
     });
   };
 
@@ -462,14 +474,14 @@ export default function NewSalePage() {
               </div>
               <div>
                 <Label htmlFor="customerPhone">Customer Phone (Optional)</Label>
-                <Input
-                  id="customerPhone"
-                  type="tel"
-                  placeholder="Enter customer phone number"
-                  value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
-                  className="mt-1"
-                />
+                <div className="mt-1">
+                  <MerchantPhoneInput
+                    id="customerPhone"
+                    value={customerPhoneE164}
+                    onChange={setCustomerPhoneE164}
+                    disabled={createSaleMutation.isPending}
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -2,8 +2,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../core/phone/phone_api_payload.dart';
 import '../../../core/ui/theme/app_colors.dart';
 import '../../../core/ui/theme/app_icons.dart';
 import '../../../core/ui/widgets/app_card.dart';
@@ -14,7 +16,7 @@ import '../../../core/utils/app_formatters.dart';
 import '../../../models/location.dart';
 import '../../../models/product.dart';
 import '../../../models/sale.dart';
-import '../../inventory/inventory_repository.dart';
+import '../../locations/locations_repository.dart';
 import '../../products/products_repository.dart';
 import '../../subscription/subscription_controller.dart';
 import '../../products/screens/product_create_edit_screen.dart';
@@ -59,8 +61,8 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
   final _qtyController = TextEditingController(text: '1');
   final _notesController = TextEditingController();
   final _customerNameController = TextEditingController();
-  final _customerPhoneController = TextEditingController();
   final List<_CartLine> _lines = [];
+  String? _customerPhoneE164;
   final Map<String, TextEditingController> _unitPriceControllers = {};
   DateTime _saleDate = DateTime.now();
   bool _loading = true;
@@ -82,7 +84,6 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
     _qtyController.dispose();
     _notesController.dispose();
     _customerNameController.dispose();
-    _customerPhoneController.dispose();
     super.dispose();
   }
 
@@ -92,8 +93,7 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
       _loadError = null;
     });
     try {
-      final invRepo = ref.read(inventoryRepositoryProvider);
-      final locations = await invRepo.fetchLocations();
+      final locations = await ref.read(locationsRepositoryProvider).fetchLocations();
       Location? def;
       for (final l in locations) {
         if (l.isDefault) {
@@ -241,6 +241,7 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
 
     setState(() => _submitting = true);
     try {
+      final customer = PhoneApiPayload.customerSale(_customerPhoneE164);
       final payload = CreateSaleDto(
         items: _lines
             .map((l) => CreateSaleItemDto(productId: l.productId, quantity: l.quantity, unitPrice: l.unitPrice))
@@ -249,7 +250,9 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
         notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
         saleDate: _saleDate.toIso8601String().split('T')[0],
         customerName: _customerNameController.text.trim().isEmpty ? null : _customerNameController.text.trim(),
-        customerPhone: _customerPhoneController.text.trim().isEmpty ? null : _customerPhoneController.text.trim(),
+        customerPhoneCountryIso: customer?['customerPhoneCountryIso'],
+        customerPhoneNationalNumber: customer?['customerPhoneNationalNumber'],
+        customerPhone: customer?['customerPhone'],
       );
 
       final sale = await ref.read(salesRepositoryProvider).createSale(payload);
@@ -467,10 +470,19 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
             decoration: const InputDecoration(labelText: 'Customer name', border: OutlineInputBorder()),
           ),
           const SizedBox(height: 8),
-          TextFormField(
-            controller: _customerPhoneController,
-            decoration: const InputDecoration(labelText: 'Customer phone', border: OutlineInputBorder()),
-            keyboardType: TextInputType.phone,
+          IntlPhoneField(
+            decoration: const InputDecoration(
+              labelText: 'Customer phone',
+              border: OutlineInputBorder(),
+            ),
+            initialCountryCode: 'ET',
+            disableLengthCheck: true,
+            onChanged: (phone) {
+              final c = phone.completeNumber.trim();
+              setState(() {
+                _customerPhoneE164 = c.isEmpty ? null : (c.startsWith('+') ? c : '+$c');
+              });
+            },
           ),
           const SizedBox(height: 16),
           AppCard(

@@ -7,7 +7,6 @@ import '../../core/api/dto/api_response_dto.dart';
 import '../../models/inventory_summary.dart';
 import '../../models/inventory_transaction.dart';
 import '../../models/inventory_entry.dart';
-import '../../models/location.dart';
 import '../../models/product.dart';
 import '../dashboard/dto/inventory_summary_dto.dart';
 import '../products/dto/product_dto.dart';
@@ -99,17 +98,6 @@ class InventoryRepository {
         .toList();
   }
 
-  Future<List<Location>> fetchLocations() async {
-    final res = await _dio.get(Endpoints.locations);
-    final envelope = ApiResponseDto<List<LocationDto>>.fromJson(
-      res.data as Map<String, dynamic>,
-      (json) => (json as List<dynamic>).map((e) => LocationDto.fromJson(e as Map<String, dynamic>)).toList(),
-    );
-
-    final dtos = envelope.data ?? [];
-    return dtos.map((dto) => dto.toDomain()).toList();
-  }
-
   Future<({List<InventoryEntry> entries, PaginationDto pagination})> fetchEntries({
     String? productId,
     String? locationId,
@@ -157,18 +145,6 @@ class InventoryRepository {
     if (res.data['success'] != true) {
       throw InventoryRepositoryException(res.data['error'] ?? 'Failed to transfer stock');
     }
-  }
-
-  Future<Location> fetchDefaultLocation() async {
-    final res = await _dio.get(Endpoints.locationsDefault);
-    final envelope = ApiResponseDto<LocationDto>.fromJson(
-      res.data as Map<String, dynamic>,
-      (json) => LocationDto.fromJson(json as Map<String, dynamic>),
-    );
-
-    final dto = envelope.data;
-    if (dto == null) throw const InventoryRepositoryException('Missing default location data.');
-    return dto.toDomain();
   }
 
   String _typeToBackendString(InventoryTransactionType type) {

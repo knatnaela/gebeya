@@ -5,6 +5,7 @@ import { AppError } from '../middleware/error.middleware';
 import { InventoryTransactionType } from '@prisma/client';
 import { notificationService } from './notification.service';
 import { inventoryStockService } from './inventory-stock.service';
+import { inventoryFifoService } from './inventory-fifo.service';
 import { locationService } from './location.service';
 
 export interface CreateInventoryTransactionData {
@@ -94,37 +95,63 @@ export class InventoryService {
       return `cl${timestamp}${randomStr}`;
     };
 
-    // Create transaction
-    const transaction = await prisma.inventory_transactions.create({
-      data: {
-        id: generateId(),
-        merchantId: tenantId,
-        productId: data.productId,
-        locationId,
-        userId: req.user!.userId,
-        type: data.type,
-        quantity: data.quantity,
-        reason: data.reason,
-        referenceId: data.referenceId,
-        referenceType: data.referenceType,
-      },
-      include: {
-        products: true,
-        locations: {
-          select: {
-            id: true,
-            name: true,
+    const transaction = await prisma.$transaction(async (tx) => {
+      if (data.quantity < 0) {
+        await inventoryFifoService.allocateFifo(tx, {
+          productId: data.productId,
+          locationId,
+          quantity: Math.abs(data.quantity),
+          fallbackUnitCost: Number(product.costPrice),
+        });
+      } else if (data.quantity > 0) {
+        const q = data.quantity;
+        const unitCost = Number(product.costPrice);
+        await tx.inventory.create({
+          data: {
+            id: generateId(),
+            productId: data.productId,
+            locationId,
+            quantity: q,
+            remainingQuantity: q,
+            unitCost,
+            receivedDate: new Date(),
+            notes: data.reason || `Stock adjustment: +${q}`,
+            addedBy: req.user!.userId,
+          },
+        });
+      }
+
+      return tx.inventory_transactions.create({
+        data: {
+          id: generateId(),
+          merchantId: tenantId,
+          productId: data.productId,
+          locationId,
+          userId: req.user!.userId,
+          type: data.type,
+          quantity: data.quantity,
+          reason: data.reason,
+          referenceId: data.referenceId,
+          referenceType: data.referenceType,
+        },
+        include: {
+          products: true,
+          locations: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          users: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
           },
         },
-        users: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-          },
-        },
-      },
+      });
     });
 
     // Check if stock is now low and send notification if needed
@@ -293,13 +320,30 @@ export class InventoryService {
     const lowStockProducts: any[] = [];
     const outOfStockProducts: any[] = [];
 
+    const batchRows = await prisma.inventory.findMany({
+      where: {
+        productId: { in: productIds },
+        locationId: defaultLocation.id,
+      },
+      select: {
+        productId: true,
+        remainingQuantity: true,
+        unitCost: true,
+      },
+    });
+
+    const valueByProduct: Record<string, number> = {};
+    for (const row of batchRows) {
+      const fallback = Number(products.find((p) => p.id === row.productId)?.costPrice) || 0;
+      const uc = row.unitCost != null ? Number(row.unitCost) : fallback;
+      const add = row.remainingQuantity * uc;
+      valueByProduct[row.productId] = (valueByProduct[row.productId] || 0) + add;
+    }
+
     for (const product of products) {
       const currentStock = stockMap[product.id] || 0;
       totalStockQuantity += currentStock;
-      // Use costPrice for inventory valuation (what you paid for it), not selling price
-      // Fallback to price if costPrice is not set
-      const unitCost = Number(product.costPrice) || Number(product.price) || 0;
-      totalStockValue += unitCost * currentStock;
+      totalStockValue += valueByProduct[product.id] ?? 0;
 
       if (currentStock <= product.lowStockThreshold) {
         if (lowStockProducts.length < INVENTORY_SUMMARY_MAX_DETAIL_ITEMS) {

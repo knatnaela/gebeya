@@ -11,7 +11,7 @@ This document tracks **what is not implemented yet** in the Flutter app compared
 
 ## Summary
 
-The app already covers **auth**, **dashboard** (KPIs + date filters + subscription fetch), **products** (list, filters, create/edit, CSV export, bulk deactivate), **core inventory** (overview, transactions + CSV, adjust stock, stock entries, add stock, transfer), and **sales** (list, new sale, detail, CSV export, text share / receipt). Everything below is **still missing or placeholder** relative to web parity.
+The app already covers **auth** (login, merchant signup, **forgot password**, **reset password**, **Account** for name; **change password** under **More**), **dashboard** (KPIs + date filters + subscription fetch), **products** (list, filters, create/edit, CSV export, bulk deactivate), **core inventory** (overview, transactions + CSV, adjust stock, stock entries, add stock, transfer), **sales** (list, new sale, detail, CSV export, text share / receipt), **locations** (list, CRUD, set default, deactivate), **expenses** (list with category + date filters, create/edit/delete, load more), a **More** hub (locations/expenses shortcuts, account, change password, logout), **feature-based nav** (bottom tabs + stack routes gated by `products.view` / `inventory.view` / `sales.view` like web), and **subscription UX** (proactive `/subscriptions/status`, trial warning banner, full-screen expired state with change password + logout). Everything below is **still missing or placeholder** relative to web parity.
 
 ---
 
@@ -30,15 +30,16 @@ The app already covers **auth**, **dashboard** (KPIs + date filters + subscripti
 
 ---
 
-## 2. Expenses
+## 2. Expenses — **done (mobile v2)**
 
 | Web | Mobile status |
 |-----|----------------|
-| List with category + date filters | Missing |
-| Create / edit / delete | Missing |
+| List with category + date filters | `ExpensesScreen`, `expenses_controller`, `GET /expenses` |
+| Create / edit / delete | `ExpenseFormScreen`, `POST/PUT/DELETE /expenses/:id` |
 
-**Endpoints:** `GET/POST /api/expenses`, `GET/PUT/DELETE /api/expenses/:id`  
-(Web gates the nav item with `sales.view`, same as today.)
+**Endpoints in app:** `lib/core/api/endpoints.dart` — `expenses`, `expense(id)`; repository: `lib/features/expenses/expenses_repository.dart`.
+
+**Not in v1 (optional later):** permission gating `sales.view` (same as web).
 
 ---
 
@@ -54,13 +55,13 @@ Optional: charts and deeper breakdowns depending on API payload (`MOBILE_MERCHAN
 
 ---
 
-## 4. Locations (CRUD)
+## 4. Locations (CRUD) — **done (mobile v2)**
 
 | Web | Mobile status |
 |-----|----------------|
-| List, create, edit, delete, set default | **No** management UI; locations are only fetched for stock/sale flows |
+| List, create, edit, delete, set default | `LocationsListScreen`, `LocationFormScreen`; `locations_repository` (also used by stock/sale flows) |
 
-**Endpoints:** `GET/POST /api/locations`, `GET /api/locations/default`, `PUT/PATCH/DELETE` as in `MERCHANT_FEATURES.md` §7.
+**Endpoints in app:** `locations`, `location(id)`, `locationsDefault`, `locationSetDefault(id)` in `endpoints.dart`.
 
 ---
 
@@ -100,15 +101,16 @@ Optional: charts and deeper breakdowns depending on API payload (`MOBILE_MERCHAN
 
 | Area | Mobile status |
 |------|----------------|
-| `MoreScreen` | **Placeholder** — should host shortcuts to Expenses, Analytics, Locations, Users, Settings, Logout, etc. |
-| Feature-based nav (e.g. hide Products if no `products.view`) | `CurrentUser.permissions` exists but **no route/tab gating** like web sidebar |
+| `MoreScreen` | **Hub shipped:** Locations / Expenses tiles respect `inventory.view` / `sales.view`; Account (name), change password, logout; account header. Still missing: Analytics, Users, web-style Settings page. |
+| Feature-based nav (e.g. hide Products if no `products.view`) | **Shipped:** `merchantPermissionsProvider` + `route_permission.dart` redirects; `HomeShell` filters bottom tabs by feature slug (same slugs as web sidebar). |
+| Subscription / trial | **Shipped:** refresh after login via `GET /subscriptions/status`; trial warning (≤7 days); expired → `/subscription-expired` (no main shell); change password + logout; 403 interceptor still sets expired. |
 | Inventory search (app bar) | Handler not implemented (commented as “later”) |
 
 ---
 
 ## 9. Shared gap (web and mobile)
 
-- **Merchant Settings:** Web sidebar links to `/merchant/settings` with `settings.view`, but **no settings page exists** in the web app yet. Mobile can ship a minimal screen (account, change password, subscription read-only) per `MOBILE_MERCHANT_APP_SPEC.md` §5.
+- **Merchant Settings:** Web `/merchant/settings` supports **name**, **change password** link, read-only email. Mobile **Account** (`/app/account`) is name only; **change password** is on **More**.
 
 ---
 
@@ -117,12 +119,12 @@ Optional: charts and deeper breakdowns depending on API payload (`MOBILE_MERCHAN
 Aligned with `MOBILE_MERCHANT_APP_SPEC.md` §7:
 
 1. ~~Sales~~ **done**
-2. Locations management  
-3. Expenses  
+2. ~~Locations management~~ **done**
+3. ~~Expenses~~ **done**
 4. Debt and credit  
 5. Merchant users  
 6. Dedicated analytics / low-stock polish  
-7. Permissions + “More” hub  
+7. ~~Permissions + subscription shell UX~~ **done** (remaining: Analytics, Users, Settings in More)  
 
 ---
 

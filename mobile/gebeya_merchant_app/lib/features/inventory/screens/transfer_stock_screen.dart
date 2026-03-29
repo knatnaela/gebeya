@@ -12,7 +12,7 @@ import '../../../models/location.dart';
 import '../../../models/product.dart';
 import '../../products/screens/product_picker_screen.dart';
 import '../dto/transfer_stock_dto.dart';
-import '../inventory_repository.dart';
+import '../../locations/locations_repository.dart';
 import '../stock_entries_controller.dart';
 
 class TransferStockScreen extends ConsumerStatefulWidget {
@@ -55,7 +55,7 @@ class _TransferStockScreenState extends ConsumerState<TransferStockScreen> {
 
   Future<void> _loadLocations() async {
     try {
-      final locs = await ref.read(inventoryRepositoryProvider).fetchLocations();
+      final locs = await ref.read(locationsRepositoryProvider).fetchLocations();
       if (mounted) setState(() => _allLocations = locs);
     } catch (e) {
       // Handle silently or show toast?

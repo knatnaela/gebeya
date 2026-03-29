@@ -222,6 +222,8 @@ class _SaleTile extends ConsumerWidget {
         ),
         subtitle: Text(
           [
+            if (sale.status == 'VOIDED') 'Voided',
+            if ((sale.locationName ?? '').isNotEmpty) sale.locationName!,
             if ((sale.customerName ?? '').isNotEmpty) sale.customerName!,
             if (sellerLabel.isNotEmpty) sellerLabel,
             '${sale.items.length} item(s)',

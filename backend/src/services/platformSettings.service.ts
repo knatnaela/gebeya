@@ -5,6 +5,8 @@ export interface UpdatePlatformSettingsData {
   defaultTrialPeriodDays?: number;
   defaultTransactionFeeRate?: number;
   globalFeatureFlags?: Record<string, any>;
+  /** ISO 3166-1 alpha-2, uppercase */
+  phoneFirstCountryIsoCodes?: string[];
 }
 
 export class PlatformSettingsService {
@@ -30,6 +32,7 @@ export class PlatformSettingsService {
             defaultTrialPeriodDays: 30,
             defaultTransactionFeeRate: 5.00, // 5%
             globalFeatureFlags: {},
+            phoneFirstCountryIsoCodes: [],
             updatedAt: new Date(),
           },
         });
@@ -69,10 +72,28 @@ export class PlatformSettingsService {
         defaultTrialPeriodDays: data.defaultTrialPeriodDays ?? settings.defaultTrialPeriodDays,
         defaultTransactionFeeRate: data.defaultTransactionFeeRate ?? settings.defaultTransactionFeeRate,
         globalFeatureFlags: (data.globalFeatureFlags ?? settings.globalFeatureFlags) as any,
+        phoneFirstCountryIsoCodes:
+          data.phoneFirstCountryIsoCodes !== undefined
+            ? data.phoneFirstCountryIsoCodes
+                .map((c) => c.trim().toUpperCase())
+                .filter((c) => /^[A-Z]{2}$/.test(c))
+            : settings.phoneFirstCountryIsoCodes,
+        updatedAt: new Date(),
       },
     });
 
     return updatedSettings;
+  }
+
+  /**
+   * Safe subset for unauthenticated login/register UIs.
+   */
+  async getPublicAuthUiConfig(): Promise<{ phoneFirstCountryIsoCodes: string[] }> {
+    const settings = await this.getSettings();
+    const codes = settings.phoneFirstCountryIsoCodes || [];
+    return {
+      phoneFirstCountryIsoCodes: codes.map((c) => c.toUpperCase()),
+    };
   }
 
   /**

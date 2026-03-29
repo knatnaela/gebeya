@@ -112,6 +112,12 @@ class SalesController extends Notifier<SalesState> {
       if (s.id.toLowerCase().contains(q)) return true;
       if ((s.customerName ?? '').toLowerCase().contains(q)) return true;
       if ((s.customerPhone ?? '').toLowerCase().contains(q)) return true;
+      if ((s.customerPhoneNationalNumber ?? '').toLowerCase().contains(q)) {
+        return true;
+      }
+      if ((s.customerPhoneCountryIso ?? '').toLowerCase().contains(q)) {
+        return true;
+      }
       final seller = s.seller;
       if (seller != null) {
         final name = '${seller.firstName ?? ''} ${seller.lastName ?? ''}'.trim().toLowerCase();

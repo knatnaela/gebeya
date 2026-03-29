@@ -35,6 +35,17 @@ export class PlatformSettingsController {
         return;
       }
 
+      const rawCodes = req.body.phoneFirstCountryIsoCodes;
+      let phoneFirstCountryIsoCodes: string[] | undefined;
+      if (Array.isArray(rawCodes)) {
+        phoneFirstCountryIsoCodes = rawCodes.map((c: unknown) => String(c).trim()).filter(Boolean);
+      } else if (typeof rawCodes === 'string' && rawCodes.trim()) {
+        phoneFirstCountryIsoCodes = rawCodes
+          .split(/[\s,]+/)
+          .map((c) => c.trim())
+          .filter(Boolean);
+      }
+
       const data: UpdatePlatformSettingsData = {
         defaultTrialPeriodDays: req.body.defaultTrialPeriodDays
           ? parseInt(req.body.defaultTrialPeriodDays, 10)
@@ -43,6 +54,7 @@ export class PlatformSettingsController {
           ? parseFloat(req.body.defaultTransactionFeeRate)
           : undefined,
         globalFeatureFlags: req.body.globalFeatureFlags,
+        phoneFirstCountryIsoCodes,
       };
 
       const settings = await platformSettingsService.updateSettings(data);

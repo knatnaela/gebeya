@@ -24,6 +24,8 @@ _InventoryEntry _$InventoryEntryFromJson(Map<String, dynamic> json) =>
           PaymentStatus.paid,
       supplierName: json['supplierName'] as String?,
       supplierContact: json['supplierContact'] as String?,
+      remainingQuantity: (json['remainingQuantity'] as num?)?.toInt(),
+      unitCost: (json['unitCost'] as num?)?.toDouble(),
       totalCost: (json['totalCost'] as num?)?.toDouble(),
       paidAmount: (json['paidAmount'] as num?)?.toDouble(),
       paymentDueDate: json['paymentDueDate'] == null
@@ -57,6 +59,8 @@ Map<String, dynamic> _$InventoryEntryToJson(_InventoryEntry instance) =>
       'paymentStatus': _$PaymentStatusEnumMap[instance.paymentStatus]!,
       'supplierName': instance.supplierName,
       'supplierContact': instance.supplierContact,
+      'remainingQuantity': instance.remainingQuantity,
+      'unitCost': instance.unitCost,
       'totalCost': instance.totalCost,
       'paidAmount': instance.paidAmount,
       'paymentDueDate': instance.paymentDueDate?.toIso8601String(),

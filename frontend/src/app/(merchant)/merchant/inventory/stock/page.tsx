@@ -102,7 +102,7 @@ export default function StockManagementPage() {
   const { data: searchedProducts, isLoading: isLoadingProducts } = useQuery({
     queryKey: ['products', debouncedProductSearch],
     queryFn: async () => {
-      const params: any = { isActive: true}; // Limit to 50 for search results
+      const params: any = { isActive: true }; // Limit to 50 for search results
       if (debouncedProductSearch) {
         params.search = debouncedProductSearch;
       }
@@ -381,14 +381,14 @@ export default function StockManagementPage() {
                     </PopoverTrigger>
                     <PopoverContent className="w-[min(400px,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] p-0">
                       <Command shouldFilter={false}>
-                        <CommandInput 
-                          placeholder="Search product..." 
+                        <CommandInput
+                          placeholder="Search product..."
                           value={productSearch}
-                          onValueChange={setProductSearch} 
+                          onValueChange={setProductSearch}
                         />
                         <CommandList>
                           {isLoadingProducts ? (
-                             <div className="py-6 text-center text-sm text-muted-foreground">Loading...</div>
+                            <div className="py-6 text-center text-sm text-muted-foreground">Loading...</div>
                           ) : (
                             <>
                               <CommandEmpty>No product found.</CommandEmpty>
@@ -486,14 +486,14 @@ export default function StockManagementPage() {
                     placeholder="Additional notes about this stock entry"
                   />
                 </div>
-                
+
                 {/* Payment Tracking Section */}
                 <div className="border-t pt-4 space-y-4">
                   <div>
                     <Label className="text-base font-semibold">Payment Information</Label>
                     <p className="text-sm text-muted-foreground">Track whether this stock was paid for or bought on credit</p>
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="payment-status">Payment Status</Label>
                     <Select
@@ -530,7 +530,7 @@ export default function StockManagementPage() {
                   </div>
 
                   <div>
-                    <Label htmlFor="total-cost">Total Cost (Optional)</Label>
+                    <Label htmlFor="total-cost">Total Cost </Label>
                     <Input
                       id="total-cost"
                       type="number"
@@ -593,8 +593,8 @@ export default function StockManagementPage() {
           <div className="flex gap-4 mb-4">
             <div className="flex-1">
               <Label>Filter by Product</Label>
-              <Select 
-                value={productFilter || 'all'} 
+              <Select
+                value={productFilter || 'all'}
                 onValueChange={(value) => setProductFilter(value === 'all' ? '' : value)}
               >
                 <SelectTrigger>
@@ -612,8 +612,8 @@ export default function StockManagementPage() {
             </div>
             <div className="flex-1">
               <Label>Filter by Location</Label>
-              <Select 
-                value={locationFilter || 'all'} 
+              <Select
+                value={locationFilter || 'all'}
                 onValueChange={(value) => setLocationFilter(value === 'all' ? '' : value)}
               >
                 <SelectTrigger>
@@ -671,8 +671,8 @@ export default function StockManagementPage() {
                             entry.paymentStatus === 'CREDIT'
                               ? 'destructive'
                               : entry.paymentStatus === 'PARTIAL'
-                              ? 'secondary'
-                              : 'default'
+                                ? 'secondary'
+                                : 'default'
                           }
                         >
                           {entry.paymentStatus}

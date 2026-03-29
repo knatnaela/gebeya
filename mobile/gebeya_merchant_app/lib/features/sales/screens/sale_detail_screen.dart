@@ -52,6 +52,53 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
     }
   }
 
+  Future<void> _showVoidDialog(BuildContext context) async {
+    final reasonController = TextEditingController();
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Void this sale?'),
+        content: TextField(
+          controller: reasonController,
+          decoration: const InputDecoration(
+            labelText: 'Reason (optional)',
+            border: OutlineInputBorder(),
+          ),
+          maxLines: 3,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () async {
+              final reason = reasonController.text.trim();
+              Navigator.pop(ctx);
+              try {
+                await ref.read(salesRepositoryProvider).voidSale(
+                      widget.saleId,
+                      reason: reason.isEmpty ? null : reason,
+                    );
+                await _load();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Sale voided')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(e.toString())),
+                  );
+                }
+              }
+            },
+            child: const Text('Void'),
+          ),
+        ],
+      ),
+    );
+    reasonController.dispose();
+  }
+
   Future<void> _share(Sale sale, String currencyCode) async {
     final b = StringBuffer()
       ..writeln('Sale ${sale.id}')
@@ -105,21 +152,51 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
       ],
       body: ListView(
         children: [
+          if (sale.status == 'VOIDED')
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Chip(
+                    label: const Text('Voided'),
+                    backgroundColor: Theme.of(context).colorScheme.errorContainer,
+                  ),
+                  if (sale.voidedAt != null) ...[
+                    const SizedBox(width: 8),
+                    Text(
+                      AppFormatters.formatDate(sale.voidedAt!),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ],
+              ),
+            ),
           AppCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('${AppFormatters.formatDate(sale.saleDate)} · ${sale.id}', style: Theme.of(context).textTheme.titleSmall),
+                if ((sale.locationName ?? '').isNotEmpty) Text('Location: ${sale.locationName}'),
                 if ((sale.customerName ?? '').isNotEmpty) Text('Customer: ${sale.customerName}'),
                 if ((sale.customerPhone ?? '').isNotEmpty) Text('Phone: ${sale.customerPhone}'),
                 if (sale.seller != null)
                   Text(
                     'Sold by: ${sale.seller!.firstName ?? ''} ${sale.seller!.lastName ?? ''} ${sale.seller!.email != null ? '(${sale.seller!.email})' : ''}',
                   ),
+                if ((sale.voidReason ?? '').isNotEmpty) Text('Void reason: ${sale.voidReason}'),
                 if ((sale.notes ?? '').isNotEmpty) Text('Notes: ${sale.notes}'),
               ],
             ),
           ),
+          if (sale.status != 'VOIDED')
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: OutlinedButton.icon(
+                onPressed: () => _showVoidDialog(context),
+                icon: const Icon(Icons.cancel_outlined),
+                label: const Text('Void sale'),
+              ),
+            ),
           const SizedBox(height: 12),
           AppCard(
             child: Column(

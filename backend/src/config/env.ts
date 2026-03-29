@@ -17,6 +17,9 @@ export const env = {
   
   // Email (Resend)
   RESEND_API_KEY: process.env.RESEND_API_KEY || '',
+
+  // Telegram Gateway (https://core.telegram.org/gateway/api)
+  TELEGRAM_GATEWAY_ACCESS_TOKEN: (process.env.TELEGRAM_GATEWAY_ACCESS_TOKEN || '').trim(),
   
   // Image Storage (Cloudinary)
   CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || '',
