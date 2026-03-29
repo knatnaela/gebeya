@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:gebeya_merchant_app/app.dart';
+import 'package:gebeya/app.dart';
 
 void main() {
   testWidgets('App boots and shows something', (WidgetTester tester) async {

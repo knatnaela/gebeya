@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:gebeya_merchant_app/core/ui/theme/app_colors.dart';
-import 'package:gebeya_merchant_app/core/ui/theme/app_icons.dart';
-import 'package:gebeya_merchant_app/core/ui/theme/app_theme.dart';
-import 'package:gebeya_merchant_app/core/utils/app_formatters.dart';
+import 'package:gebeya/core/ui/theme/app_colors.dart';
+import 'package:gebeya/core/ui/theme/app_icons.dart';
+import 'package:gebeya/core/ui/theme/app_theme.dart';
+import 'package:gebeya/core/utils/app_formatters.dart';
 
 class DesignShowcaseScreen extends StatelessWidget {
   static const String routeLocation = '/design-showcase';

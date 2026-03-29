@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gebeya_merchant_app/core/ui/theme/app_icons.dart';
+import 'package:gebeya/core/ui/theme/app_icons.dart';
 
 class SubscriptionBanner extends StatelessWidget {
   const SubscriptionBanner({super.key, required this.message});
